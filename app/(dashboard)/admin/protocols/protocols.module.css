@@ -1,0 +1,149 @@
+.container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.labelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.labelEngineering {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Tabla y Contenedores */
+.tableContainer {
+  background-color: var(--card);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.protocolCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.iconBox {
+  padding: 0.5rem;
+  background-color: #eff6ff; /* blue-50 */
+  border-radius: var(--radius-md);
+  color: #2563eb; /* blue-600 */
+}
+
+.protocolInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.protocolName {
+  font-weight: 700;
+  color: #1e293b; /* slate-800 */
+}
+
+.protocolRef {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #94a3b8; /* slate-400 */
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+}
+
+/* Estados de Ingeniería */
+.statusGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statusBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  width: fit-content;
+  color: white;
+}
+
+.active {
+  background-color: #10b981;
+}
+.draft {
+  background-color: #f59e0b;
+}
+
+.updateText {
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.emptyIconBox {
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 9999px;
+}
+
+.emptyIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #e2e8f0;
+}

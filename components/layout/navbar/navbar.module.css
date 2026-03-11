@@ -1,0 +1,59 @@
+.navbar {
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  width: 100%;
+}
+
+.container {
+  display: flex;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1.5rem;
+}
+
+.userButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.avatar {
+  height: 1.75rem;
+  width: 1.75rem;
+}
+
+.avatarFallback {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.userName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+@media (max-width: 640px) {
+  .userName {
+    display: none;
+  }
+}
+
+.dropdownLabel {
+  display: flex;
+  flex-direction: column;
+}
+
+.userEmail {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.logoutItem {
+  color: #dc2626;
+  cursor: pointer;
+}

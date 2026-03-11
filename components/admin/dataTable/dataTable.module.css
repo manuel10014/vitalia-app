@@ -1,0 +1,83 @@
+.wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.thead {
+  background-color: rgba(248, 250, 252, 0.5); /* slate-50/50 */
+}
+
+.th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 700;
+  color: #64748b; /* slate-500 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.thRight {
+  text-align: right;
+}
+
+.tbody {
+  background-color: #ffffff;
+}
+
+.tr {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background-color: rgba(37, 99, 235, 0.03); /* Hover sutil azul Vitalia */
+}
+
+.td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem; /* text-sm */
+  color: #475569; /* slate-600 */
+  white-space: nowrap;
+}
+
+.tdRight {
+  text-align: right;
+}
+
+.actionButton {
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Clases semánticas para el dropdown */
+.textBlue {
+  color: #2563eb;
+}
+.textRed {
+  color: #dc2626;
+}
+.textGreen {
+  color: #16a34a;
+}
+.bgRedHover:focus {
+  background-color: #fef2f2 !important;
+}

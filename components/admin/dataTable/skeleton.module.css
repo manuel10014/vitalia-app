@@ -1,0 +1,79 @@
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* space-y-4 */
+}
+
+/* Header del Skeleton */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+}
+
+.titlePlaceholder {
+  height: 2rem; /* h-8 */
+  width: 12rem; /* w-48 */
+  background-color: #e5e7eb; /* gray-200 */
+  border-radius: 0.5rem;
+  animation: pulse 2s infinite;
+}
+
+.buttonPlaceholder {
+  height: 2.5rem; /* h-10 */
+  width: 8rem; /* w-32 */
+  background-color: #f3f4f6; /* gray-100 */
+  border-radius: 0.5rem;
+  animation: pulse 2s infinite;
+}
+
+/* Cuerpo de la Tabla */
+.tableFrame {
+  border: 1px solid #f3f4f6;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.tableHead {
+  height: 3rem; /* h-12 */
+  background-color: #f9fafb; /* gray-50 */
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.cell {
+  height: 1rem;
+  width: 25%; /* w-1/4 */
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  animation: pulse 2s infinite;
+}
+
+.actionCell {
+  height: 1rem;
+  width: 3rem; /* w-12 */
+  background-color: #e5e7eb;
+  border-radius: 0.25rem;
+  margin-left: auto;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

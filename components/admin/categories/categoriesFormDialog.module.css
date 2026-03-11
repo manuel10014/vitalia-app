@@ -1,0 +1,38 @@
+/* CategoriesFormDialog.module.css */
+.content {
+  max-width: 450px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 0;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.inputUppercase {
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  letter-spacing: 0.025em;
+}
+
+.footer {
+  margin-top: 1rem;
+}
+
+.submitButton {
+  width: 100%;
+  font-weight: 600;
+}

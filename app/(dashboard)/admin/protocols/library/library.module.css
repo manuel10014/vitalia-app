@@ -1,0 +1,105 @@
+.container {
+  padding: 2rem;
+  background-color: #fafafa;
+  min-height: 100vh;
+}
+
+.titleSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.pageLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.actionsGroup {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tableCard {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.codeCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconBox {
+  width: 36px;
+  height: 36px;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryText {
+  font-weight: 700;
+  color: #111827;
+}
+
+.secondaryText {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.protocolName {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.categoryBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-color: #d1d5db;
+  color: #4b5563;
+}
+
+.adoptButton {
+  background-color: #111827;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.adoptButton:hover {
+  background-color: #1f2937;
+  transform: translateY(-1px);
+}
+
+.emptyTable {
+  padding: 4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+}
