@@ -1,0 +1,98 @@
+/* ProtocolBuilder.module.css */
+
+.builderContainer {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: #f8fafc; /* Slate 50 */
+  min-height: 100vh;
+}
+
+.builderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0; /* Slate 200 */
+}
+
+.protocolName {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a; /* Slate 900 */
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.versionBadge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #dbeafe; /* Blue 100 */
+  color: #1e40af; /* Blue 800 */
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sectionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Animación suave para la entrada de nuevas secciones/campos */
+.sectionsList > div {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos de inputs específicos dentro del builder */
+.builderContainer input:focus {
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Estilo para el botón de "Agregar Sección" que ocupa todo el ancho */
+.sectionsList button[variant="outline"] {
+  border-style: dashed;
+  border-width: 2px;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  color: #64748b; /* Slate 500 */
+}
+
+.sectionsList button[variant="outline"]:hover {
+  background-color: #f1f5f9; /* Slate 100 */
+  border-color: #3b82f6; /* Blue 500 */
+  color: #2563eb; /* Blue 600 */
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 768px) {
+  .builderHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .builderHeader button {
+    width: 100%;
+  }
+
+  .protocolName {
+    font-size: 1.5rem;
+  }
+}
