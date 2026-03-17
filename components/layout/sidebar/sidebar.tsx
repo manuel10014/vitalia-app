@@ -26,8 +26,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/admin/work-orders", label: "Órdenes (OT)", icon: ClipboardList },
-  { href: "/test-runs", label: "Ejecuciones", icon: FlaskConical },
-  { href: "/reports", label: "Reportes", icon: FileText },
+  { href: "/admin/test-runs", label: "Ejecuciones", icon: FlaskConical },
+  { href: "/admin/reports", label: "Reportes", icon: FileText },
 ];
 
 const engineeringItems: NavItem[] = [

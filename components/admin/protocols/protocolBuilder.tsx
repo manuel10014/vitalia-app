@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface Field {
   id: string;
   label: string;
-  type: "text" | "number" | "select";
+  type: "text" | "number" | "select" | "check";
   unit?: string;
   required: boolean;
 }

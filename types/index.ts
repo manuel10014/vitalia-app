@@ -1,3 +1,5 @@
+import { ProtocolField } from "@/hooks/useProtocols";
+
 export interface ApiPaginationMeta {
   total: number;
   page: number;
@@ -8,6 +10,18 @@ export interface ApiErrorResponse {
   message: string | string[];
   error?: string;
   statusCode?: number;
+}
+
+export interface Protocol {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  version: number;
+  fields: ProtocolField[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type JsonValue =
@@ -70,7 +84,6 @@ export interface Asset {
   tagId: string;
   name: string;
   categoryId: string;
-  // Añadimos la relación que viene del backend
   category?: {
     id: string;
     name: string;
@@ -127,40 +140,40 @@ export type TestStatus =
 
 export type SyncStatus = "SYNCED" | "PENDING" | "FAILED";
 
-export interface TestRunData {
-  testRunId: string;
-  capturedData: Record<string, unknown>;
-  computedData: Record<string, unknown> | null;
-  syncStatus: SyncStatus;
-  capturedAt: string;
-}
-
+// Unificamos TestRun para que tenga tanto la metadata como los valores capturados
 export interface TestRun {
   id: string;
   workOrderId: string;
   assetId: string;
   protocolVersionId: string;
-  createdById: string;
+  createdById?: string; // Lo hacemos opcional por si el backend no siempre lo envía
   status: TestStatus;
   startedAt: string | null;
   finishedAt: string | null;
-  metadata: JsonValue | null;
+  metadata?: JsonValue | null;
+  values: Record<string, unknown>; // El campo que usa tu formulario de "Ejecutar Prueba"
+  asset?: Asset;
+  protocol?: {
+    name: string;
+    code: string;
+  };
   createdAt: string;
   updatedAt: string;
-  data?: TestRunData;
 }
 
+// Unificamos ReportSnapshot
 export interface ReportSnapshot {
   id: string;
   testRunId: string;
   workOrderId: string;
   reportName: string;
-  versionNumber: number;
+  versionNumber?: number;
   snapshotData: Record<string, unknown>;
-  snapshotHash: string;
+  snapshotHash?: string;
   pdfUrl: string | null;
   issuedAt: string | null;
   createdAt: string;
+  testRun?: TestRun;
 }
 
 export interface Signature {

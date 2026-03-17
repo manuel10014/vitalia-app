@@ -7,7 +7,7 @@ import { ApiErrorResponse, ApiPaginationMeta } from "@/types";
 export interface ProtocolField {
   id: string;
   label: string;
-  type: "text" | "number" | "select";
+  type: "text" | "number" | "select" | "check";
   unit?: string;
   required: boolean;
   options?: string[];
