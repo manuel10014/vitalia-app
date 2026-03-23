@@ -1,57 +1,68 @@
+/* test-runs.module.css */
 .container {
   padding: 2rem;
-  background-color: #fafafa;
-  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .header {
-  margin-bottom: 2.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.5rem;
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.875rem;
+  font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.025em;
-  line-height: 1.1;
 }
 
 .subtitle {
   color: #64748b;
-  font-size: 1rem;
-  max-width: 600px;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .tableCard {
-  background: white;
-  border-radius: 12px;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
   border: 1px solid #e2e8f0;
   box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px -1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
-/* Colores de estados específicos para insignias */
-.statusBadge {
-  font-weight: 600;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
+/* Estilos para las celdas internas que no maneja la DataTable directamente */
+.assetInfo {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  flex-direction: column;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-  .title {
-    font-size: 1.5rem;
-  }
+.assetName {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.assetMeta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.timeInfo {
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.timeLabel {
+  color: #64748b;
+  margin-right: 4px;
 }

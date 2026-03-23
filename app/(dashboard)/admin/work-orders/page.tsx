@@ -3,9 +3,9 @@
 import { useWorkOrders, WorkOrder } from "@/hooks/useWorkOrders";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus, Calendar, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import styles from "./workorders.module.css";
+import { CreateWorkOrderDialog } from "@/components/admin/workOrders/CreateWorkOrderDialog";
 
 export default function WorkOrdersPage() {
   const { workOrders, isLoading } = useWorkOrders();
@@ -31,11 +31,9 @@ export default function WorkOrdersPage() {
             Gestiona la asignación y el progreso de los técnicos en campo.
           </p>
         </div>
-        <Button className="gap-2">
-          <Plus size={16} /> Nueva OT
-        </Button>
-      </header>
 
+        <CreateWorkOrderDialog />
+      </header>
       <DataTable<WorkOrder>
         data={workOrders || []}
         isLoading={isLoading}

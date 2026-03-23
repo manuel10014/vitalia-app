@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react"; // ✅ Añadido useMemo
+import { useState, useMemo } from "react";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Zap,
-  Calendar,
-  Search,
-  ShieldCheck,
-  AlertTriangle,
-  FileText,
-} from "lucide-react";
+import { Zap, Calendar, Search, ShieldCheck, FileText } from "lucide-react";
 import styles from "./equipment.module.css";
 import { CreateEquipmentModal } from "@/components/admin/equipment/CreateEquipmentModal";
 import { useEquipment } from "@/hooks/useEquiment";
@@ -60,9 +53,11 @@ export default function EquipmentPage() {
       </header>
 
       <div className={styles.tableCard}>
-        <DataTable
-          data={filteredEquipment} // ✅ Usamos la variable filtrada
-          isLoading={isLoading} // ✅ Usamos el estado de carga real
+        {/* DataTable centraliza ahora el feedback visual y el manejo de carga */}
+        <DataTable<MeasurementEquipment>
+          data={filteredEquipment}
+          isLoading={isLoading}
+          emptyMessage="No se encontraron equipos de medición que coincidan con la búsqueda."
           columns={[
             {
               header: "Equipo / Identificación",
@@ -106,6 +101,7 @@ export default function EquipmentPage() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  disabled={!e.certificateUrl}
                   className="gap-2 text-blue-600"
                   onClick={() =>
                     e.certificateUrl && window.open(e.certificateUrl, "_blank")
@@ -125,16 +121,6 @@ export default function EquipmentPage() {
             },
           ]}
         />
-
-        {filteredEquipment.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            <AlertTriangle size={48} className="text-amber-500 mb-4" />
-            <p className="font-bold">No se encontraron equipos</p>
-            <p className="text-sm text-muted-foreground">
-              Intenta con otro término de búsqueda o registra un nuevo equipo.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

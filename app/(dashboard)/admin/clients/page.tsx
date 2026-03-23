@@ -8,7 +8,6 @@ import api from "@/lib/api";
 
 import { useClients } from "@/hooks/useAdmin";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
-import { DataTableSkeleton } from "@/components/admin/dataTable/DataTableSkeleton";
 import { ClientFormSheet } from "@/components/admin/clients/createFormSheet";
 import { Client } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,6 @@ export default function ClientsPage() {
 
   const filteredClients = useMemo(() => {
     const allClients = response?.data || [];
-
     if (!searchTerm) return allClients;
 
     const lowerSearch = searchTerm.toLowerCase();
@@ -59,7 +57,6 @@ export default function ClientsPage() {
     setSelectedClient(null);
     setIsSheetOpen(true);
   };
-
   const mutationToggle = useMutation({
     mutationFn: (client: Client) =>
       api.patch(`/clients/${client.id}/active`, { isActive: !client.isActive }),
@@ -70,8 +67,6 @@ export default function ClientsPage() {
     },
     onError: () => toast.error("Error al cambiar el estado"),
   });
-
-  if (isLoading) return <DataTableSkeleton />;
 
   return (
     <div className={styles.container}>
@@ -104,14 +99,13 @@ export default function ClientsPage() {
       </header>
 
       <div
-        className={`${styles.tableWrapper} ${
-          isFetching ? styles.fetching : ""
-        }`}
+        className={`${styles.tableWrapper} ${isFetching ? styles.fetching : ""}`}
       >
         <DataTable<Client>
           data={filteredClients}
           isLoading={isLoading}
           onEdit={handleEdit}
+          emptyMessage={`No se encontraron clientes que coincidan`}
           onToggleStatus={(client) => {
             if (client.isActive) setClientToToggle(client);
             else mutationToggle.mutate(client);
@@ -165,15 +159,6 @@ export default function ClientsPage() {
             },
           ]}
         />
-        {filteredClients.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            <Building2 className={styles.emptyIcon} />
-            <p className={styles.subtitle}>
-              No se encontraron clientes que coincidan con &quot;{searchTerm}
-              &quot;
-            </p>
-          </div>
-        )}
       </div>
 
       <ClientFormSheet
@@ -197,8 +182,7 @@ export default function ClientsPage() {
             <AlertDialogDescription className={styles.alertDescription}>
               Vas a deshabilitar a{" "}
               <strong>{clientToToggle?.businessName}</strong>. Ningún
-              colaborador de esta empresa podrá acceder a la plataforma hasta
-              que restaures su estado.
+              colaborador de esta empresa podrá acceder a la plataforma.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

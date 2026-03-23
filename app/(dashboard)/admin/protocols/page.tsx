@@ -3,13 +3,13 @@
 import { useProtocols } from "@/hooks/useProtocols";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Settings2, Plus, Library } from "lucide-react";
+import { FileText, Settings2, Plus } from "lucide-react";
 import Link from "next/link";
 import styles from "./protocols.module.css";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 
 export default function ProtocolsPage() {
-  const { protocols, isLoading } = useProtocols();
+  const { protocols = [], isLoading } = useProtocols();
 
   return (
     <div className={styles.container}>
@@ -27,7 +27,7 @@ export default function ProtocolsPage() {
         </div>
 
         <Link href="/admin/protocols/library">
-          <Button className="gap-2 shadow-lg shadow-blue-100">
+          <Button className="gap-2 shadow-lg shadow-blue-100 font-bold">
             <Plus size={16} />
             Adoptar de Biblioteca
           </Button>
@@ -38,6 +38,7 @@ export default function ProtocolsPage() {
         <DataTable
           data={protocols}
           isLoading={isLoading}
+          emptyMessage="No has adoptado protocolos aún. Visita la biblioteca global para elegir los estándares técnicos."
           columns={[
             {
               header: "Nombre del Protocolo",
@@ -73,15 +74,21 @@ export default function ProtocolsPage() {
                 return (
                   <div className={styles.statusGroup}>
                     <span
-                      className={`${styles.statusBadge} ${activeVer?.isActive ? styles.active : styles.draft}`}
+                      className={`${styles.statusBadge} ${
+                        activeVer?.isActive ? styles.active : styles.draft
+                      }`}
                     >
                       {activeVer
-                        ? `v${activeVer.versionNumber} ${activeVer.isActive ? "Activa" : "Borrador"}`
+                        ? `v${activeVer.versionNumber} ${
+                            activeVer.isActive ? "Activa" : "Borrador"
+                          }`
                         : "Sin versión"}
                     </span>
                     <span className={styles.updateText}>
                       {activeVer
-                        ? `Editado: ${new Date(activeVer.updatedAt).toLocaleDateString()}`
+                        ? `Editado: ${new Date(
+                            activeVer.updatedAt,
+                          ).toLocaleDateString()}`
                         : "N/A"}
                     </span>
                   </div>
@@ -108,7 +115,7 @@ export default function ProtocolsPage() {
                         </Button>
                       </Link>
                     ) : (
-                      <span className={styles.protocolRef}>
+                      <span className="text-xs text-red-500 font-medium">
                         Error: Sin versión
                       </span>
                     )}
@@ -118,27 +125,6 @@ export default function ProtocolsPage() {
             },
           ]}
         />
-
-        {protocols.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIconBox}>
-              <Library className={styles.emptyIcon} />
-            </div>
-            <div className="space-y-1">
-              <p className={styles.protocolName}>
-                No has adoptado protocolos aún
-              </p>
-              <p className={styles.subtitle}>
-                Visita la biblioteca global para elegir los estándares técnicos.
-              </p>
-            </div>
-            <Link href="/admin/protocols/library">
-              <Button variant="outline" size="sm">
-                Ir a Biblioteca
-              </Button>
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   );

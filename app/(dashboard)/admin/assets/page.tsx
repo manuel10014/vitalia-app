@@ -15,14 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  Plus,
-  Package,
-  QrCode,
-  Settings2,
-  FilterX,
-} from "lucide-react";
+import { Search, Plus, Package, QrCode, Settings2 } from "lucide-react";
 import { AssetFormSheet } from "@/components/admin/Assets/AssetFormSheet";
 
 export default function AssetsPage() {
@@ -35,7 +28,6 @@ export default function AssetsPage() {
 
   const filteredAssets = useMemo(() => {
     const allAssets: Asset[] = response?.data || [];
-
     let filtered = allAssets;
 
     if (statusFilter !== "ALL") {
@@ -63,11 +55,6 @@ export default function AssetsPage() {
   const handleCreate = () => {
     setSelectedAsset(null);
     setIsSheetOpen(true);
-  };
-
-  const resetFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("ALL");
   };
 
   return (
@@ -115,10 +102,12 @@ export default function AssetsPage() {
       </header>
 
       <div className={styles.tableCard}>
+        {/* DataTable ahora se encarga de TODO el feedback visual */}
         <DataTable<Asset>
           data={filteredAssets}
           isLoading={isLoading}
           onEdit={handleEdit}
+          emptyMessage="No se encontraron activos con los filtros aplicados."
           columns={[
             {
               header: "Identificación / Tag",
@@ -133,7 +122,7 @@ export default function AssetsPage() {
                       <span className={styles.tagName}>{a.tagId}</span>
                       <span className={styles.categorySub}>
                         • {a.category?.name || "N/A"}
-                      </span>{" "}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -207,16 +196,6 @@ export default function AssetsPage() {
             },
           ]}
         />
-
-        {filteredAssets.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            <FilterX className={styles.emptyStateIcon} />
-            <p className={styles.emptyStateText}>No se encontraron activos</p>
-            <Button variant="ghost" size="sm" onClick={resetFilters}>
-              Limpiar filtros
-            </Button>
-          </div>
-        )}
       </div>
 
       <AssetFormSheet

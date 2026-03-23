@@ -1,28 +1,40 @@
-"use client";
+// components/admin/dataTable/DataTableSkeleton.tsx
+import { Skeleton } from "@/components/ui/skeleton";
+import styles from "./dataTable.module.css";
 
-import styles from "./skeleton.module.css";
+interface DataTableSkeletonProps {
+  columnCount: number;
+  rowCount?: number;
+}
 
-export function DataTableSkeleton() {
+export function DataTableSkeleton({
+  columnCount,
+  rowCount = 8,
+}: DataTableSkeletonProps) {
   return (
-    <div className={styles.container}>
-      {/* Cabecera de tabla simulada */}
-      <div className={styles.header}>
-        <div className={styles.titlePlaceholder} />
-        <div className={styles.buttonPlaceholder} />
-      </div>
-
-      {/* Filas de tabla simuladas */}
-      <div className={styles.tableFrame}>
-        <div className={styles.tableHead} />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className={styles.row}>
-            <div className={styles.cell} />
-            <div className={styles.cell} />
-            <div className={styles.cell} />
-            <div className={styles.actionCell} />
-          </div>
-        ))}
-      </div>
+    <div className={styles.wrapper}>
+      <table className={styles.table}>
+        <thead className={styles.thead}>
+          <tr>
+            {Array.from({ length: columnCount }).map((_, i) => (
+              <th key={i} className={styles.th}>
+                <Skeleton className="h-4 w-24" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className={styles.tbody}>
+          {Array.from({ length: rowCount }).map((_, rowIndex) => (
+            <tr key={rowIndex} className={styles.tr}>
+              {Array.from({ length: columnCount }).map((_, colIndex) => (
+                <td key={colIndex} className={styles.td}>
+                  <Skeleton className="h-5 w-full" />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

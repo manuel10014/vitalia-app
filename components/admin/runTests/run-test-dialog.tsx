@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Play } from "lucide-react";
-import { Asset, Protocol } from "@/types";
+import { Asset, PaginatedResponse, Protocol } from "@/types";
 import { ProtocolField } from "@/hooks/useProtocols";
 
 export function RunTestDialog() {
@@ -34,10 +34,20 @@ export function RunTestDialog() {
 
   const { data: assets } = useQuery<Asset[]>({
     queryKey: ["assets"],
-    queryFn: async () => (await api.get<Asset[]>("/assets")).data,
+    queryFn: async () => {
+      const response = await api.get<PaginatedResponse<Asset> | Asset[]>(
+        "/assets",
+      );
+      const rawData = response.data;
+
+      if (Array.isArray(rawData)) {
+        return rawData;
+      }
+
+      return rawData.data;
+    },
   });
 
-  // ✅ Corregido el tipo de Pro[] a Protocol[]
   const { data: protocols } = useQuery<Protocol[]>({
     queryKey: ["protocols"],
     queryFn: async () => (await api.get<Protocol[]>("/protocols")).data,
@@ -94,11 +104,17 @@ export function RunTestDialog() {
                   <SelectValue placeholder="Seleccionar..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {assets?.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.tagId}
-                    </SelectItem>
-                  ))}
+                  {assets && Array.isArray(assets) ? (
+                    assets.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.tagId}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-xs text-muted-foreground">
+                      Cargando activos...
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>

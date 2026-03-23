@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useProtocols, GlobalProtocol } from "@/hooks/useProtocols";
-import { DataTable } from "@/components/admin/dataTable/DataTable"; // Reutilizamos tu componente base
+import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +23,15 @@ export default function LibraryPage() {
   const { globalProtocols, isLoading, adoptProtocol } = useProtocols();
 
   const filtered = useMemo(() => {
-    return (
-      globalProtocols?.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.category.toLowerCase().includes(search.toLowerCase()) ||
-          p.code.toLowerCase().includes(search.toLowerCase()),
-      ) || []
+    const protocols = globalProtocols || [];
+    if (!search) return protocols;
+
+    const lowerSearch = search.toLowerCase();
+    return protocols.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lowerSearch) ||
+        p.category.toLowerCase().includes(lowerSearch) ||
+        p.code.toLowerCase().includes(lowerSearch),
     );
   }, [globalProtocols, search]);
 
@@ -68,6 +70,11 @@ export default function LibraryPage() {
         <DataTable<GlobalProtocol>
           data={filtered}
           isLoading={isLoading}
+          emptyMessage={
+            search
+              ? `No se encontraron resultados para "${search}"`
+              : "No hay estándares registrados en la biblioteca global."
+          }
           columns={[
             {
               header: "Norma / Código",
@@ -116,15 +123,6 @@ export default function LibraryPage() {
             },
           ]}
         />
-
-        {filtered.length === 0 && !isLoading && (
-          <div className={styles.emptyTable}>
-            <p>No hay estándares registrados en la biblioteca global.</p>
-            <span className="text-sm text-muted-foreground">
-              Utilice el botón Nueva Norma Técnica para comenzar.
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
