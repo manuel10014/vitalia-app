@@ -5,20 +5,11 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Loader2,
-  QrCode,
-  Settings2,
-  Plus,
-  Trash2,
-  Info,
-  MapPin,
-} from "lucide-react";
+import { Loader2, Settings2, Plus, Trash2, Info, Factory } from "lucide-react";
 import api from "@/lib/api";
 import styles from "./AssetsFormSheet.module.css";
 
 import { assetSchema, type AssetFormValues } from "./schema";
-import { useProjects } from "@/hooks/useAdmin";
 import { Asset } from "@/types";
 
 import {
@@ -66,18 +57,13 @@ interface AssetFormProps {
 
 export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
   const isEditing = !!asset;
-  const { data: response } = useProjects();
-  const projects = response?.data || [];
   const { data: categories = [] } = useAssetCategories();
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
-      tagId: "",
       name: "",
       categoryId: "",
-      locationDescription: "",
-      projectId: "",
       specsArray: [],
     },
   });
@@ -92,7 +78,7 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
     name: "categoryId",
   });
 
-  // Autocarga de conductores
+  // Autocarga de especificaciones técnicas fijas (CONDUCTORES)
   useEffect(() => {
     const selectedCat = categories.find((c) => c.id === selectedCategoryId);
     if (
@@ -101,17 +87,15 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
       !isEditing
     ) {
       replace([
-        { key: "Tipo de conductor(Aislamiento)", value: "EPR" },
+        { key: "Tipo de aislamiento", value: "EPR" },
         { key: "Tensión nominal [kV]", value: "35" },
-        { key: "Calibre [AWG]", value: "750 MCM" },
-        { key: "Longitud (M)", value: "" },
-        { key: "Inicio", value: "" },
-        { key: "Final", value: "" },
+        { key: "Calibre [AWG/MCM]", value: "750" },
+        { key: "Material", value: "Aluminio" },
       ]);
     }
   }, [selectedCategoryId, categories, replace, fields.length, isEditing]);
 
-  // Reset del form
+  // Reset del form al abrir/cambiar activo
   useEffect(() => {
     if (open) {
       if (asset) {
@@ -122,20 +106,14 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
           }),
         );
         form.reset({
-          tagId: asset.tagId,
           name: asset.name,
           categoryId: asset.categoryId,
-          locationDescription: asset.locationDescription || "",
-          projectId: asset.projectId,
           specsArray,
         });
       } else {
         form.reset({
-          tagId: "",
           name: "",
           categoryId: "",
-          locationDescription: "",
-          projectId: "",
           specsArray: [],
         });
       }
@@ -153,11 +131,8 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
       );
 
       const finalPayload = {
-        tagId: values.tagId,
         name: values.name,
         categoryId: values.categoryId,
-        projectId: values.projectId,
-        locationDescription: values.locationDescription,
         specs,
       };
 
@@ -165,6 +140,10 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
         return await api.patch(`/assets/${asset.id}`, finalPayload);
       }
       return await api.post("/assets", finalPayload);
+    },
+    onSuccess: () => {
+      toast.success(isEditing ? "Activo actualizado" : "Activo registrado");
+      onOpenChange(false);
     },
     onError: (error: AxiosError<{ message: string | string[] }>) => {
       const msg = error.response?.data?.message;
@@ -177,39 +156,37 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
       <SheetContent className={styles.sheetContent} side="right">
         <SheetHeader className={styles.header}>
           <SheetTitle className={styles.title}>
-            <QrCode className={styles.titleIcon} size={20} />
-            {isEditing ? "Editar Activo" : "Nuevo Activo Técnico"}
+            <Factory className={styles.titleIcon} size={20} />
+            {isEditing ? "Editar Ficha Técnica" : "Nueva Ficha de Fabricación"}
           </SheetTitle>
           <SheetDescription>
-            Configura los datos del equipo y sus especificaciones.
+            Registre únicamente los datos técnicos permanentes del activo.
           </SheetDescription>
         </SheetHeader>
 
-        {/* ScrollArea envuelve todo el formulario */}
         <ScrollArea className={styles.scrollArea}>
           <form
             id="asset-form"
             onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
             className={styles.form}
           >
-            {/* Datos Básicos */}
+            {/* Datos de Fabricación */}
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitleGroup}>
-                  <Info size={18} /> <span>Datos Básicos</span>
+                  <Info size={18} /> <span>Identificación de Fábrica</span>
                 </div>
               </div>
               <div className={styles.grid}>
                 <div className={styles.fieldGroup}>
-                  <Label>Tag ID *</Label>
+                  <Label>Nombre / Modelo del Equipo *</Label>
                   <Input
-                    {...form.register("tagId")}
-                    placeholder="MOT-001"
-                    className={styles.monospaceInput}
+                    {...form.register("name")}
+                    placeholder="Ej: Transformador Seco 2500kVA"
                   />
                 </div>
                 <div className={styles.fieldGroup}>
-                  <Label>Categoría *</Label>
+                  <Label>Categoría de Activo *</Label>
                   <Controller
                     control={form.control}
                     name="categoryId"
@@ -233,62 +210,14 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
                   />
                 </div>
               </div>
-              <div className={styles.fieldGroup}>
-                <Label>Nombre / Modelo *</Label>
-                <Input
-                  {...form.register("name")}
-                  placeholder="Ej: Compresor 50HP"
-                />
-              </div>
             </div>
 
-            {/* Ubicación */}
-            <div className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionTitleGroup}>
-                  <MapPin size={18} /> <span>Ubicación</span>
-                </div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <Label>Proyecto *</Label>
-                <Controller
-                  control={form.control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Proyecto..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className={styles.fieldGroup}>
-                <Label>Descripción Ubicación</Label>
-                <Input
-                  {...form.register("locationDescription")}
-                  placeholder="Ej: Planta 2, Sector A"
-                />
-              </div>
-            </div>
-
-            {/* Especificaciones */}
-            {/* Sección de Especificaciones con altura fija y scroll propio */}
+            {/* Especificaciones Técnicas */}
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitleGroup}>
                   <Settings2 size={18} />
-                  <span>Especificaciones Técnicas</span>
+                  <span>Especificaciones Técnicas (Fijas)</span>
                 </div>
                 <Button
                   type="button"
@@ -301,21 +230,16 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
               </div>
 
               <div className={styles.specsContainer}>
-                {fields.length === 0 && (
-                  <p className={styles.emptySpecs}>
-                    Sin parámetros registrados.
-                  </p>
-                )}
                 {fields.map((field, index) => (
                   <div key={field.id} className={styles.specRow}>
                     <Input
                       {...form.register(`specsArray.${index}.key`)}
-                      placeholder="Propiedad"
+                      placeholder="Ej: Marca"
                       className={styles.specInput}
                     />
                     <Input
                       {...form.register(`specsArray.${index}.value`)}
-                      placeholder="Valor"
+                      placeholder="Ej: ABB"
                       className={styles.specInput}
                     />
                     <Button
@@ -343,7 +267,7 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
             {mutation.isPending ? (
               <Loader2 className="animate-spin" />
             ) : (
-              "REGISTRAR ACTIVO"
+              "GUARDAR FICHA TÉCNICA"
             )}
           </Button>
         </SheetFooter>

@@ -5,7 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Building2, Contact, ShieldCheck } from "lucide-react";
+import { Loader2, Building2, Contact, ShieldCheck, User } from "lucide-react";
 import axios from "axios";
 
 import api from "@/lib/api";
@@ -46,12 +46,14 @@ export function ClientFormSheet({
     defaultValues: {
       businessName: "",
       taxId: "",
+      contactName: "",
       email: "",
       phone: "",
       isActive: true,
     },
   });
 
+  // Efecto para cargar datos cuando se abre el modo edición
   useEffect(() => {
     if (open) {
       if (client) {
@@ -59,6 +61,7 @@ export function ClientFormSheet({
         form.reset({
           businessName: client.businessName,
           taxId: client.taxId || "",
+          contactName: contact.name ?? "",
           email: contact.email ?? "",
           phone: contact.phone ? String(contact.phone) : "",
           isActive: client.isActive,
@@ -67,6 +70,7 @@ export function ClientFormSheet({
         form.reset({
           businessName: "",
           taxId: "",
+          contactName: "",
           email: "",
           phone: "",
           isActive: true,
@@ -77,10 +81,20 @@ export function ClientFormSheet({
 
   const mutation = useMutation({
     mutationFn: async (values: ClientFormValues) => {
-      const { email, phone, ...rest } = values;
-      const payload = { ...rest, contactInfo: { email, phone } };
+      const { email, phone, contactName, ...rest } = values;
+
+      // Estructuramos el payload para el backend (NestJS/Prisma)
+      const payload = {
+        ...rest,
+        contactInfo: {
+          email,
+          phone,
+          name: contactName, // Se guarda como 'name' dentro de contactInfo
+        },
+      };
+
       return isEditing
-        ? await api.patch(`/clients/${client.id}`, payload)
+        ? await api.patch(`/clients/${client?.id}`, payload)
         : await api.post("/clients", payload);
     },
     onSuccess: () => {
@@ -91,8 +105,8 @@ export function ClientFormSheet({
     onError: (error: unknown) => {
       const msg = axios.isAxiosError(error)
         ? error.response?.data?.message
-        : "Error inesperado";
-      toast.error(msg);
+        : "Error inesperado al procesar la solicitud";
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     },
   });
 
@@ -106,7 +120,7 @@ export function ClientFormSheet({
           </SheetTitle>
           <SheetDescription>
             {isEditing
-              ? `Modifica los datos legales de ${client?.businessName}.`
+              ? `Modifica los datos legales y de contacto de ${client?.businessName}.`
               : "Ingresa la información necesaria para crear el perfil del cliente."}
           </SheetDescription>
         </SheetHeader>
@@ -150,13 +164,18 @@ export function ClientFormSheet({
 
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="taxId" className={styles.fieldLabel}>
-                    NIT
+                    NIT / Tax ID *
                   </Label>
                   <Input
                     {...form.register("taxId")}
                     id="taxId"
                     placeholder="900.000.000-1"
                   />
+                  {form.formState.errors.taxId && (
+                    <p className={styles.errorText}>
+                      {form.formState.errors.taxId.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -172,12 +191,34 @@ export function ClientFormSheet({
                 </span>
               </div>
 
-              <div
-                className={`${styles.fieldGrid} sm:grid-cols-2`}
-                style={{
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                }}
-              >
+              <div className={styles.fieldGrid}>
+                {/* Nombre de la persona de contacto */}
+                <div
+                  className={styles.fieldGroup}
+                  style={{ gridColumn: "1 / -1" }}
+                >
+                  <Label htmlFor="contactName" className={styles.fieldLabel}>
+                    Nombre de la persona de contacto *
+                  </Label>
+                  <div className="relative">
+                    <User
+                      className="absolute left-3 top-3 text-muted-foreground"
+                      size={16}
+                    />
+                    <Input
+                      {...form.register("contactName")}
+                      id="contactName"
+                      placeholder="Ej: Juan Pérez"
+                      className={`pl-10 ${form.formState.errors.contactName ? styles.inputError : ""}`}
+                    />
+                  </div>
+                  {form.formState.errors.contactName && (
+                    <p className={styles.errorText}>
+                      {form.formState.errors.contactName.message}
+                    </p>
+                  )}
+                </div>
+
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="email" className={styles.fieldLabel}>
                     Email Corporativo
@@ -189,6 +230,7 @@ export function ClientFormSheet({
                     placeholder="admin@vitalia.com"
                   />
                 </div>
+
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="phone" className={styles.fieldLabel}>
                     Teléfono
@@ -202,7 +244,7 @@ export function ClientFormSheet({
               </div>
             </div>
 
-            {/* Configuración */}
+            {/* Configuración de Estado */}
             <div className={styles.configBox}>
               <div className={styles.configInfo}>
                 <Label className={styles.configTitle}>

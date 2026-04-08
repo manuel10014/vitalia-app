@@ -16,7 +16,9 @@ export function useEquipment() {
   });
 
   const createEquipment = useMutation({
-    mutationFn: async (newEquipment: Partial<MeasurementEquipment>) => {
+    mutationFn: async (
+      newEquipment: FormData | Partial<MeasurementEquipment>,
+    ) => {
       return await api.post("/equipment", newEquipment);
     },
     onSuccess: () => {

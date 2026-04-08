@@ -52,17 +52,18 @@ export interface User {
   updatedAt: string;
 }
 
+export interface ContactInfo {
+  email: string;
+  phone: string | number;
+  name?: string;
+}
+
 export interface Client {
   id: string;
   businessName: string;
-  taxId: string | null;
-  contactInfo: {
-    email: string;
-    phone: number;
-  };
+  taxId?: string;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  contactInfo: ContactInfo;
 }
 
 export interface Project {
