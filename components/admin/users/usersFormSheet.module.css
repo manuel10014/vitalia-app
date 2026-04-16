@@ -1,0 +1,37 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem; /* Aumentamos un poco el espacio entre campos */
+  padding: 1.5rem 1.5rem 2.5rem 1.5rem; /* Padding: Arriba, Derecha, Abajo, Izquierda */
+  height: 100%;
+  overflow-y: auto; /* Por si la pantalla es pequeña, permite scroll interno */
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem; /* Espacio entre Label e Input */
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155; /* slate-700 */
+  padding-left: 0.1rem; /* Alineación ligera */
+}
+
+.footer {
+  border-top: 1px solid #e2e8f0;
+  padding: 1.5rem; /* Padding consistente con el formulario */
+  background-color: #ffffff;
+  position: sticky;
+  bottom: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  height: 3rem;
+  background-color: #2563eb !important;
+  font-weight: 700;
+  border-radius: 8px;
+}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Zap, Calendar, Search, ShieldCheck, FileText } from "lucide-react";
 import styles from "./equipment.module.css";
 import { CreateEquipmentModal } from "@/components/admin/equipment/CreateEquipmentModal";
-import { useEquipment } from "@/hooks/useEquiment";
+import { useEquipment } from "@/hooks/useEquipment";
 import { MeasurementEquipment } from "@/types";
 
 export default function EquipmentPage() {
@@ -16,12 +16,14 @@ export default function EquipmentPage() {
   const { data: allEquipment = [], isLoading } = useEquipment();
 
   const filteredEquipment = useMemo(() => {
-    return allEquipment.filter(
-      (e: MeasurementEquipment) =>
-        e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.internalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+    return allEquipment.filter((e: MeasurementEquipment) => {
+      const search = searchTerm.toLowerCase();
+      return (
+        e.name.toLowerCase().includes(search) ||
+        (e.internalCode?.toLowerCase().includes(search) ?? false) ||
+        (e.serialNumber?.toLowerCase().includes(search) ?? false)
+      );
+    });
   }, [allEquipment, searchTerm]);
 
   return (
@@ -69,31 +71,39 @@ export default function EquipmentPage() {
                   <div className={styles.flexColumn}>
                     <span className={styles.primaryText}>{e.name}</span>
                     <span className={styles.secondaryText}>
-                      {e.internalCode} • SN: {e.serialNumber}
+                      {e.internalCode ?? "SIN CÓDIGO"} • SN:{" "}
+                      {e.serialNumber ?? "S/N"}
                     </span>
                   </div>
                 </div>
               ),
             },
             {
-              header: "Estado de Calibración",
-              render: (e) => (
-                <div className={styles.statusCell}>
-                  <Badge
-                    className={
-                      e.status === "EXPIRED" ? styles.bgError : styles.bgSuccess
-                    }
-                  >
-                    {e.status === "CALIBRATED" ? "Calibrado" : "Vencido"}
-                  </Badge>
-                  <div className={styles.dateGroup}>
-                    <Calendar size={12} />
-                    <span>
-                      Prox: {new Date(e.nextCalibration).toLocaleDateString()}
-                    </span>
+              header: "Estado / Vencimiento",
+              render: (e) => {
+                const isExpired = e.calibrationDueAt
+                  ? new Date(e.calibrationDueAt) < new Date()
+                  : false;
+
+                return (
+                  <div className={styles.statusCell}>
+                    <Badge
+                      className={isExpired ? styles.bgError : styles.bgSuccess}
+                    >
+                      {isExpired ? "Vencido" : "Vigente"}
+                    </Badge>
+                    <div className={styles.dateGroup}>
+                      <Calendar size={12} />
+                      <span>
+                        Prox:
+                        {e.calibrationDueAt
+                          ? new Date(e.calibrationDueAt).toLocaleDateString()
+                          : "Pendiente"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ),
+                );
+              },
             },
             {
               header: "Certificado",

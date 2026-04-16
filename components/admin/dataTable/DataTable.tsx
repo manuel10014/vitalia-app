@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DataTableSkeleton } from "./DataTableSkeleton";
 import styles from "./dataTable.module.css";
 
-interface Column<T> {
+export interface Column<T> {
   header: string;
   render: (item: T) => ReactNode;
 }

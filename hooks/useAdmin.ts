@@ -12,7 +12,7 @@ import { AxiosError } from "axios";
 
 export function useClients(page = 1) {
   return useQuery<PaginatedResponse<Client>>({
-    queryKey: ["admin", "clients", page],
+    queryKey: ["admin", "clients", { page }],
     queryFn: async () => {
       const { data } = await api.get(`/clients`, { params: { page } });
       return data;

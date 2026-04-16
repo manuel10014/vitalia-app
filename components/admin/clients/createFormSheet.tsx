@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Building2, Contact, ShieldCheck, User } from "lucide-react";
+import {
+  Loader2,
+  Building2,
+  Contact,
+  ShieldCheck,
+  User,
+  MapPin,
+} from "lucide-react";
 import axios from "axios";
 
 import api from "@/lib/api";
-import { clientSchema, type ClientFormValues } from "./schema";
+import { ClientFormData, clientSchema } from "./schema";
 import { Client } from "@/types";
 import styles from "./clientsFormSheet.module.css";
 
@@ -26,6 +33,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Listado de ciudades principales de Colombia
+const COLOMBIAN_CITIES = [
+  "Bogotá, D.C.",
+  "Medellín",
+  "Cali",
+  "Barranquilla",
+  "Cartagena",
+  "Santamarta",
+  "Bucaramanga",
+  "Pereira",
+  "Manizales",
+  "Cúcuta",
+  "Ibagué",
+  "Villavicencio",
+  "Montería",
+  "Pastos",
+  "Neiva",
+];
 
 interface ClientFormSheetProps {
   open: boolean;
@@ -41,7 +74,7 @@ export function ClientFormSheet({
   const queryClient = useQueryClient();
   const isEditing = !!client;
 
-  const form = useForm<ClientFormValues>({
+  const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       businessName: "",
@@ -49,86 +82,96 @@ export function ClientFormSheet({
       contactName: "",
       email: "",
       phone: "",
+      address: "",
+      city: "",
       isActive: true,
     },
   });
 
-  // Efecto para cargar datos cuando se abre el modo edición
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = form;
+
   useEffect(() => {
     if (open) {
       if (client) {
-        const contact = client.contactInfo || {};
-        form.reset({
+        reset({
           businessName: client.businessName,
           taxId: client.taxId || "",
-          contactName: contact.name ?? "",
-          email: contact.email ?? "",
-          phone: contact.phone ? String(contact.phone) : "",
+          contactName: client.contactName || "",
+          email: client.email || "",
+          phone: client.phone || "",
+          address: client.address || "",
+          city: client.city || "",
           isActive: client.isActive,
         });
       } else {
-        form.reset({
+        reset({
           businessName: "",
           taxId: "",
           contactName: "",
           email: "",
           phone: "",
+          address: "",
+          city: "",
           isActive: true,
         });
       }
     }
-  }, [client, form, open]);
+  }, [client, reset, open]);
 
   const mutation = useMutation({
-    mutationFn: async (values: ClientFormValues) => {
-      const { email, phone, contactName, ...rest } = values;
-
-      // Estructuramos el payload para el backend (NestJS/Prisma)
-      const payload = {
-        ...rest,
-        contactInfo: {
-          email,
-          phone,
-          name: contactName, // Se guarda como 'name' dentro de contactInfo
-        },
-      };
-
+    mutationFn: async (values: ClientFormData) => {
       return isEditing
-        ? await api.patch(`/clients/${client?.id}`, payload)
-        : await api.post("/clients", payload);
+        ? await api.patch(`/clients/${client?.id}`, values)
+        : await api.post("/clients", values);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "clients"],
+      });
+
       toast.success(isEditing ? "Cliente actualizado" : "Cliente registrado");
       onOpenChange(false);
     },
     onError: (error: unknown) => {
       const msg = axios.isAxiosError(error)
         ? error.response?.data?.message
-        : "Error inesperado al procesar la solicitud";
+        : "Error inesperado";
       toast.error(Array.isArray(msg) ? msg[0] : msg);
     },
   });
 
+  const onSubmit = (data: ClientFormData) => {
+    mutation.mutate(data);
+  };
+
+  const onInvalid = (err: FieldErrors<ClientFormData>) => {
+    console.log("Validation Errors:", err);
+    toast.error("Por favor, revisa los campos obligatorios en rojo.");
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={styles.sheetContent}>
+      <SheetContent className={styles.sheetContent} side="right">
         <SheetHeader className={styles.header}>
           <SheetTitle className={styles.title}>
             <Building2 className={styles.titleIcon} size={24} />
             {isEditing ? "Editar Cliente" : "Registro de Cliente"}
           </SheetTitle>
           <SheetDescription>
-            {isEditing
-              ? `Modifica los datos legales y de contacto de ${client?.businessName}.`
-              : "Ingresa la información necesaria para crear el perfil del cliente."}
+            Información técnica y legal para la gestión de activos.
           </SheetDescription>
         </SheetHeader>
 
         <div className={styles.scrollArea}>
           <form
             id="client-form"
-            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             className={styles.form}
           >
             {/* Sección Legal */}
@@ -139,42 +182,78 @@ export function ClientFormSheet({
                   Identificación Legal
                 </span>
               </div>
-
               <div className={styles.fieldGrid}>
                 <div className={styles.fieldGroup}>
-                  <Label htmlFor="businessName" className={styles.fieldLabel}>
-                    Razón Social *
-                  </Label>
+                  <Label>Razón Social *</Label>
                   <Input
-                    {...form.register("businessName")}
-                    id="businessName"
+                    {...register("businessName")}
+                    className={errors.businessName ? styles.inputError : ""}
                     placeholder="Ej: Vitalia Energy S.A.S"
-                    className={
-                      form.formState.errors.businessName
-                        ? styles.inputError
-                        : ""
-                    }
                   />
-                  {form.formState.errors.businessName && (
+                  {errors.businessName && (
                     <p className={styles.errorText}>
-                      {form.formState.errors.businessName.message}
+                      {errors.businessName.message}
                     </p>
                   )}
                 </div>
-
                 <div className={styles.fieldGroup}>
-                  <Label htmlFor="taxId" className={styles.fieldLabel}>
-                    NIT / Tax ID *
-                  </Label>
+                  <Label>NIT / Tax ID *</Label>
                   <Input
-                    {...form.register("taxId")}
-                    id="taxId"
+                    {...register("taxId")}
+                    className={errors.taxId ? styles.inputError : ""}
                     placeholder="900.000.000-1"
                   />
-                  {form.formState.errors.taxId && (
-                    <p className={styles.errorText}>
-                      {form.formState.errors.taxId.message}
-                    </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Sección Ubicación con SELECT */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <MapPin size={16} />
+                <span className={styles.sectionLabel}>Ubicación</span>
+              </div>
+              <div className={styles.fieldGrid}>
+                <div className={styles.fieldGroup}>
+                  <Label>Dirección *</Label>
+                  <Input
+                    {...register("address")}
+                    className={errors.address ? styles.inputError : ""}
+                    placeholder="Calle 100 # 15-20"
+                  />
+                  {errors.address && (
+                    <p className={styles.errorText}>{errors.address.message}</p>
+                  )}
+                </div>
+                <div className={styles.fieldGroup}>
+                  <Label>Ciudad *</Label>
+                  <Controller
+                    control={control}
+                    name="city"
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger
+                          className={errors.city ? styles.inputError : ""}
+                        >
+                          <SelectValue placeholder="Seleccionar ciudad..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COLOMBIAN_CITIES.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.city && (
+                    <p className={styles.errorText}>{errors.city.message}</p>
                   )}
                 </div>
               </div>
@@ -186,76 +265,53 @@ export function ClientFormSheet({
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <Contact size={16} />
-                <span className={styles.sectionLabel}>
-                  Información de Contacto
-                </span>
+                <span className={styles.sectionLabel}>Contacto Directo</span>
               </div>
-
               <div className={styles.fieldGrid}>
-                {/* Nombre de la persona de contacto */}
                 <div
                   className={styles.fieldGroup}
                   style={{ gridColumn: "1 / -1" }}
                 >
-                  <Label htmlFor="contactName" className={styles.fieldLabel}>
-                    Nombre de la persona de contacto *
-                  </Label>
+                  <Label>Persona de contacto *</Label>
                   <div className="relative">
                     <User
                       className="absolute left-3 top-3 text-muted-foreground"
                       size={16}
                     />
                     <Input
-                      {...form.register("contactName")}
-                      id="contactName"
-                      placeholder="Ej: Juan Pérez"
-                      className={`pl-10 ${form.formState.errors.contactName ? styles.inputError : ""}`}
+                      {...register("contactName")}
+                      className={`pl-10 ${errors.contactName ? styles.inputError : ""}`}
+                      placeholder="Nombre del responsable"
                     />
                   </div>
-                  {form.formState.errors.contactName && (
-                    <p className={styles.errorText}>
-                      {form.formState.errors.contactName.message}
-                    </p>
-                  )}
                 </div>
-
                 <div className={styles.fieldGroup}>
-                  <Label htmlFor="email" className={styles.fieldLabel}>
-                    Email Corporativo
-                  </Label>
+                  <Label>Email *</Label>
                   <Input
-                    {...form.register("email")}
-                    id="email"
+                    {...register("email")}
                     type="email"
-                    placeholder="admin@vitalia.com"
+                    className={errors.email ? styles.inputError : ""}
+                    placeholder="correo@empresa.com"
                   />
                 </div>
-
                 <div className={styles.fieldGroup}>
-                  <Label htmlFor="phone" className={styles.fieldLabel}>
-                    Teléfono
-                  </Label>
+                  <Label>Teléfono *</Label>
                   <Input
-                    {...form.register("phone")}
-                    id="phone"
+                    {...register("phone")}
+                    className={errors.phone ? styles.inputError : ""}
                     placeholder="+57 300..."
                   />
                 </div>
               </div>
             </div>
 
-            {/* Configuración de Estado */}
             <div className={styles.configBox}>
               <div className={styles.configInfo}>
-                <Label className={styles.configTitle}>
-                  Estado de la cuenta
-                </Label>
-                <p className={styles.configSub}>
-                  Determina si el cliente puede operar en la plataforma.
-                </p>
+                <Label className={styles.configTitle}>Estado</Label>
+                <p className={styles.configSub}>Cuenta activa</p>
               </div>
               <Controller
-                control={form.control}
+                control={control}
                 name="isActive"
                 render={({ field }) => (
                   <Switch
@@ -272,18 +328,13 @@ export function ClientFormSheet({
           <Button
             form="client-form"
             type="submit"
-            className={styles.submitBtn}
+            className="w-full h-12"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 animate-spin" size={18} />
-                Procesando...
-              </>
-            ) : isEditing ? (
-              "Guardar Cambios"
+              <Loader2 className="animate-spin" />
             ) : (
-              "Registrar Cliente"
+              "GUARDAR CAMBIOS"
             )}
           </Button>
         </SheetFooter>

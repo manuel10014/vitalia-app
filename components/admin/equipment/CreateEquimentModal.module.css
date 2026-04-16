@@ -2,13 +2,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  padding: 1rem 0;
+  padding: 1.5rem 0;
+  height: auto;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .fieldGroup {
@@ -27,10 +28,9 @@
 
 .calibrationSection {
   background-color: hsl(var(--muted) / 0.3);
-  padding: 1rem;
+  padding: 0.5rem;
   border-radius: 8px;
   border: 1px solid hsl(var(--border));
-  margin-top: 0.5rem;
 }
 
 .sectionTitle {
@@ -55,4 +55,50 @@
 .fileUpload:hover {
   border-color: #2563eb;
   background-color: #eff6ff;
+}
+
+.dialogContent {
+  display: flex;
+  flex-direction: column;
+  height: 95vh;
+  max-height: 95vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.header {
+  flex-shrink: 0; /* Evita que el header se encoja */
+  padding: 1rem;
+  background-color: white;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.scrollContainer {
+  flex: 1; /* Ocupa todo el espacio disponible entre header y footer */
+  width: 100%;
+  min-height: 0; /* CRÍTICO: Permite que el contenedor colapse y active el scroll */
+}
+
+.footer {
+  flex-shrink: 0; /* Evita que el footer/botón se encoja o desaparezca */
+  padding: 1.5rem;
+  background-color: white;
+  border-top: 1px solid hsl(var(--border));
+  margin-top: auto; /* Empuja el footer siempre al fondo */
+}
+
+.submitBtn {
+  width: 100%;
+  height: 3rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  transition: transform 0.1s;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
 }

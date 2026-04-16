@@ -9,14 +9,16 @@ import { TestRun, PaginatedResponse } from "@/types";
 import {
   ClipboardCheck,
   Activity,
-  AlertCircle,
   Clock,
   FileSearch,
   ExternalLink,
   LucideIcon,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { RunTestDialog } from "@/components/admin/runTests/run-test-dialog";
+// 🟢 Cambiamos al nuevo Launcher
+import { RunTestLauncher } from "@/components/admin/runTests/RunTestLauncher";
 import styles from "./test-runs.module.css";
 
 export default function TestRunsPage() {
@@ -33,22 +35,27 @@ export default function TestRunsPage() {
       PASSED: {
         label: "Aprobado",
         color: "bg-green-100 text-green-700",
-        icon: ClipboardCheck,
+        icon: CheckCircle2,
       },
       FAILED: {
-        label: "Fallido",
+        label: "Falla Crítica",
         color: "bg-red-100 text-red-700",
-        icon: AlertCircle,
+        icon: XCircle,
       },
       IN_PROGRESS: {
-        label: "En Ejecución",
+        label: "En Campo",
         color: "bg-blue-100 text-blue-700",
         icon: Activity,
       },
       SUBMITTED: {
-        label: "En Revisión",
-        color: "bg-purple-100 text-purple-700",
+        label: "Por Revisar",
+        color: "bg-amber-100 text-amber-700",
         icon: FileSearch,
+      },
+      APPROVED: {
+        label: "Certificado",
+        color: "bg-teal-100 text-teal-700",
+        icon: ClipboardCheck,
       },
     };
 
@@ -56,17 +63,18 @@ export default function TestRunsPage() {
       configs[status] || { label: status, color: "bg-gray-100", icon: Clock }
     );
   };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Ejecuciones Técnicas</h1>
           <p className={styles.subtitle}>
-            Gestión de protocolos y captura de datos de ingeniería.
+            Monitoreo en tiempo real de pruebas y protocolos de ingeniería.
           </p>
         </div>
-        {/* Diálogo de creación que ya teníamos */}
-        <RunTestDialog />
+        {/* 🟢 Launcher que inicia el flujo de 3 pasos */}
+        <RunTestLauncher />
       </header>
 
       <div className={styles.tableCard}>
@@ -75,30 +83,42 @@ export default function TestRunsPage() {
           isLoading={isLoading}
           columns={[
             {
-              header: "Activo / Dispositivo",
+              header: "Activo / Equipo",
               render: (tr) => (
                 <div className={styles.assetInfo}>
                   <span className={styles.assetName}>
                     {tr.asset?.name || "Sin Nombre"}
                   </span>
-                  <span className={styles.assetMeta}>
-                    TAG: {tr.asset?.tagId}
+                  <span className="text-[10px] font-bold text-slate-400">
+                    ID: {tr.asset?.tagId}
                   </span>
                 </div>
               ),
             },
             {
-              header: "OT Referencia",
+              header: "Orden de Trabajo",
               render: (tr) => (
                 <Link href={`/admin/work-orders/${tr.workOrderId}`}>
                   <Badge
                     variant="outline"
-                    className="cursor-pointer hover:bg-slate-50 gap-1 font-mono"
+                    className="cursor-pointer hover:bg-blue-50 border-blue-200 text-blue-700 gap-1 font-mono py-1"
                   >
-                    #{tr.workOrderId.split("-")[0]}
+                    {/* 🟢 Usamos el code de la OT si está disponible */}
+                    {tr.workOrder?.code || `#${tr.workOrderId.split("-")[0]}`}
                     <ExternalLink size={10} />
                   </Badge>
                 </Link>
+              ),
+            },
+            {
+              header: "Protocolo Aplicado",
+              render: (tr) => (
+                <span className="text-sm font-medium text-slate-600">
+                  {tr.protocolVersion?.organizationProtocol.globalProtocol.name}
+                  <span className="ml-1 text-[10px] text-slate-400 italic">
+                    v{tr.protocolVersion?.versionNumber}
+                  </span>
+                </span>
               ),
             },
             {
@@ -107,43 +127,46 @@ export default function TestRunsPage() {
                 const config = getStatusConfig(tr.status);
                 return (
                   <Badge
-                    className={`${config.color} border-none flex w-fit gap-1 items-center px-2 py-0.5 shadow-sm`}
+                    className={`${config.color} border-none flex w-fit gap-1 items-center px-2 py-1 shadow-sm font-bold text-[10px]`}
                   >
-                    <config.icon size={12} /> {config.label}
+                    <config.icon size={12} /> {config.label.toUpperCase()}
                   </Badge>
                 );
               },
             },
             {
-              header: "Tiempos",
+              header: "Fecha Ejecución",
               render: (tr) => (
-                <div className={styles.timeInfo}>
-                  <div>
-                    <span className={styles.timeLabel}>Inició:</span>{" "}
-                    {tr.startedAt
-                      ? new Date(tr.startedAt).toLocaleDateString()
+                <div className="flex flex-col">
+                  <span className="text-sm text-slate-700">
+                    {tr.createdAt
+                      ? new Date(tr.createdAt).toLocaleDateString()
                       : "-"}
-                  </div>
-                  <div className="font-medium">
-                    <span className={styles.timeLabel}>Finalizó:</span>{" "}
-                    {tr.finishedAt
-                      ? new Date(tr.finishedAt).toLocaleDateString()
-                      : "---"}
-                  </div>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {tr.createdAt
+                      ? new Date(tr.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </span>
                 </div>
               ),
             },
             {
               header: "Acciones",
               render: (tr) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                >
-                  <Link href={`/admin/test-runs/${tr.id}`}>Detalles</Link>
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Link href={`/admin/test-runs/${tr.id}`}>Ver Datos</Link>
+                  </Button>
+                </div>
               ),
             },
           ]}

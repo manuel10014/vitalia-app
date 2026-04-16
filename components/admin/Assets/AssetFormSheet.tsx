@@ -151,6 +151,10 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
     },
   });
 
+  const onSubmit = (data: AssetFormValues) => {
+    mutation.mutate(data);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className={styles.sheetContent} side="right">
@@ -167,7 +171,7 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
         <ScrollArea className={styles.scrollArea}>
           <form
             id="asset-form"
-            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+            onSubmit={form.handleSubmit(onSubmit)}
             className={styles.form}
           >
             {/* Datos de Fabricación */}

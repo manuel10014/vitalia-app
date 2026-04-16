@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { useEquipment } from "@/hooks/useEquiment";
+import { useState, useEffect } from "react";
+import { useForm, useWatch, FieldErrors } from "react-hook-form";
+import { useEquipment } from "@/hooks/useEquipment";
 import { MeasurementEquipment } from "@/types";
 import {
   Dialog,
@@ -14,171 +14,295 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Importante
-import { Zap, Upload, ShieldCheck, Plus, Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Zap, Upload, ShieldCheck, Plus, Loader2, Save } from "lucide-react";
 import styles from "./CreateEquimentModal.module.css";
+import { toast } from "sonner";
 
-type EquipmentFormData = Omit<
-  MeasurementEquipment,
-  "id" | "status" | "createdAt" | "updatedAt" | "certificateUrl"
-> & {
+// Tipado del formulario adaptado a los nombres de Prisma
+type EquipmentFormData = {
+  name: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
+  internalCode: string;
+  lastCalibrationAt: string;
+  calibrationDueAt: string;
   certificateUrl: FileList;
 };
 
-export function CreateEquipmentModal() {
-  const [open, setOpen] = useState(false);
-  const { createEquipment } = useEquipment();
+interface CreateEquipmentModalProps {
+  equipmentToEdit?: MeasurementEquipment | null;
+  onClose?: () => void;
+}
 
-  const { register, handleSubmit, reset, control } =
-    useForm<EquipmentFormData>();
+export function CreateEquipmentModal({
+  equipmentToEdit,
+  onClose,
+}: CreateEquipmentModalProps) {
+  const [open, setOpen] = useState(false);
+  const { createEquipment, updateEquipment } = useEquipment();
+  const isEditing = !!equipmentToEdit;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<EquipmentFormData>();
 
   const selectedFile = useWatch({
     control,
     name: "certificateUrl",
   });
 
-  const onSubmit = (data: EquipmentFormData) => {
-    // ✅ CORRECCIÓN: Para enviar archivos DEBES usar FormData
-    const formData = new FormData();
+  useEffect(() => {
+    if (equipmentToEdit) {
+      reset({
+        name: equipmentToEdit.name,
+        brand: equipmentToEdit.brand || "",
+        model: equipmentToEdit.model || "",
+        serialNumber: equipmentToEdit.serialNumber || "",
+        internalCode: equipmentToEdit.internalCode || "",
+        lastCalibrationAt: equipmentToEdit.lastCalibrationAt
+          ? new Date(equipmentToEdit.lastCalibrationAt)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        calibrationDueAt: equipmentToEdit.calibrationDueAt
+          ? new Date(equipmentToEdit.calibrationDueAt)
+              .toISOString()
+              .split("T")[0]
+          : "",
+      });
+    }
+  }, [equipmentToEdit, reset]);
 
-    // Agregamos los campos de texto
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      reset();
+      if (onClose) onClose();
+    }
+    setOpen(newOpen);
+  };
+
+  // Manejador de errores para que ESLint detecte su uso (FieldErrors)
+  const onInvalid = (err: FieldErrors<EquipmentFormData>) => {
+    console.error("Errores de validación:", err);
+    toast.error("Por favor, completa los campos obligatorios");
+  };
+
+  const onSubmit = (data: EquipmentFormData) => {
+    const formData = new FormData();
     formData.append("name", data.name);
     formData.append("brand", data.brand);
     formData.append("model", data.model);
     formData.append("serialNumber", data.serialNumber);
     formData.append("internalCode", data.internalCode);
-    formData.append("lastCalibration", data.lastCalibration);
-    formData.append("nextCalibration", data.nextCalibration);
+    formData.append("lastCalibrationAt", data.lastCalibrationAt);
+    formData.append("calibrationDueAt", data.calibrationDueAt);
 
-    // Agregamos el archivo real, no solo el nombre
-    if (data.certificateUrl && data.certificateUrl[0]) {
+    if (data.certificateUrl?.[0]) {
       formData.append("file", data.certificateUrl[0]);
     }
 
-    // Enviamos el formData completo
-    createEquipment.mutate(formData, {
-      onSuccess: () => {
-        reset();
-        setOpen(false);
-      },
-    });
+    if (isEditing && equipmentToEdit) {
+      updateEquipment.mutate(
+        { id: equipmentToEdit.id, data: formData },
+        {
+          onSuccess: () => {
+            toast.success("Equipo actualizado");
+            handleOpenChange(false);
+          },
+        },
+      );
+    } else {
+      createEquipment.mutate(formData, {
+        onSuccess: () => {
+          toast.success("Equipo registrado");
+          handleOpenChange(false);
+        },
+      });
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus size={18} /> Nuevo Equipo de Medición
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {!isEditing && (
+        <DialogTrigger asChild>
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <Plus size={18} /> Nuevo Equipo de Medición
+          </Button>
+        </DialogTrigger>
+      )}
 
-      {/* ✅ CORRECCIÓN VISUAL: Añadimos altura máxima y scroll */}
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="flex items-center gap-2 text-xl font-extrabold">
+      <DialogContent
+        className={`${styles.dialogContent} sm:max-w-[600px] border-none shadow-2xl`}
+      >
+        {/* HEADER FIJO */}
+        <DialogHeader className={styles.header}>
+          <DialogTitle className="flex items-center gap-3 text-2xl font-black text-slate-800">
             <Zap className="text-blue-600" fill="currentColor" size={24} />
-            Registro de Herramental
+            {isEditing ? "Editar equipo" : "Registro de equipo"}
           </DialogTitle>
         </DialogHeader>
 
-        {/* ✅ ScrollArea para que el formulario no se corte */}
-        <ScrollArea className="flex-1 px-6 overflow-y-auto">
-          <form
-            id="equipment-form"
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-4 pb-6"
-          >
-            <div className={styles.fieldGroup}>
-              <Label className={styles.label}>Nombre del Equipo</Label>
-              <Input
-                {...register("name", { required: true })}
-                placeholder="Ej: Hipot VLF"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+        {/* ÁREA DE SCROLL (Flex-1) */}
+        <ScrollArea className={styles.scrollContainer}>
+          <div className="px-6">
+            <form
+              id="equipment-form"
+              onSubmit={handleSubmit(onSubmit, onInvalid)}
+              className={styles.form}
+            >
               <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Marca</Label>
-                <Input {...register("brand", { required: true })} />
+                <Label className={styles.label}>Nombre del Instrumento *</Label>
+                <Input
+                  {...register("name", {
+                    required: "El nombre es obligatorio",
+                  })}
+                  placeholder="Ej: Telurómetro Digital"
+                  className={
+                    errors.name
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-[10px] font-bold mt-1 uppercase">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
-              <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Modelo</Label>
-                <Input {...register("model", { required: true })} />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Número de Serie</Label>
-                <Input {...register("serialNumber", { required: true })} />
-              </div>
-              <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Código Interno</Label>
-                <Input {...register("internalCode", { required: true })} />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-blue-700">
-                <ShieldCheck size={18} /> Trazabilidad de Calibración
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
+              {/* Fila: Marca y Modelo */}
+              <div className={styles.grid}>
                 <div className={styles.fieldGroup}>
-                  <Label className={styles.label}>Última Calibración</Label>
-                  <Input
-                    type="date"
-                    {...register("lastCalibration", { required: true })}
-                  />
+                  <Label className={styles.label}>Marca</Label>
+                  <Input {...register("brand")} placeholder="Ej: Fluke" />
                 </div>
                 <div className={styles.fieldGroup}>
-                  <Label className={styles.label}>Vencimiento</Label>
+                  <Label className={styles.label}>Modelo</Label>
+                  <Input {...register("model")} placeholder="Ej: 1625-2" />
+                </div>
+              </div>
+
+              {/* Fila: Serie y Código */}
+              <div className={styles.grid}>
+                <div className={styles.fieldGroup}>
+                  <Label className={styles.label}>N° de Serie</Label>
+                  <Input {...register("serialNumber")} placeholder="SN-88234" />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <Label className={styles.label}>Cód. Interno (Vitalia)</Label>
                   <Input
-                    type="date"
-                    {...register("nextCalibration", { required: true })}
+                    {...register("internalCode")}
+                    placeholder="VIT-INS-01"
                   />
                 </div>
               </div>
 
-              <div className="mt-4">
-                <Label className={styles.label}>Certificado PDF</Label>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-white transition-colors">
-                  <input
-                    type="file"
-                    id="cert"
-                    className="hidden"
-                    accept=".pdf"
-                    {...register("certificateUrl")}
-                  />
-                  <label
-                    htmlFor="cert"
-                    className="cursor-pointer flex flex-col items-center gap-2"
+              {/* Sección: Calibración */}
+              <div className={styles.calibrationSection}>
+                <h3 className={styles.sectionTitle}>
+                  <ShieldCheck size={18} /> Control de Calibración
+                </h3>
+
+                <div className={styles.grid}>
+                  <div className={styles.fieldGroup}>
+                    <Label className={styles.label}>Fecha Calibración *</Label>
+                    <Input
+                      type="date"
+                      {...register("lastCalibrationAt", {
+                        required: "Fecha requerida",
+                      })}
+                      className={
+                        errors.lastCalibrationAt ? "border-red-500" : ""
+                      }
+                    />
+                    {errors.lastCalibrationAt && (
+                      <p className="text-red-500 text-[10px] mt-1 italic">
+                        Requerido
+                      </p>
+                    )}
+                  </div>
+                  <div className={styles.fieldGroup}>
+                    <Label className={styles.label}>Vencimiento *</Label>
+                    <Input
+                      type="date"
+                      {...register("calibrationDueAt", {
+                        required: "Fecha requerida",
+                      })}
+                      className={
+                        errors.calibrationDueAt ? "border-red-500" : ""
+                      }
+                    />
+                    {errors.calibrationDueAt && (
+                      <p className="text-red-500 text-[10px] mt-1 italic">
+                        Requerido
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload Certificado */}
+                <div
+                  className={styles.fieldGroup}
+                  style={{ marginTop: "0.5rem" }}
+                >
+                  <Label className={styles.label}>
+                    Certificado de Calibración
+                  </Label>
+                  <div
+                    className={`${styles.fileUpload} ${errors.certificateUrl ? "border-red-400 bg-red-50" : ""}`}
                   >
-                    <Upload size={24} className="text-blue-600" />
-                    <span className="text-sm">
-                      {selectedFile?.[0]
-                        ? selectedFile[0].name
-                        : "Seleccionar archivo PDF"}
-                    </span>
-                  </label>
+                    <input
+                      type="file"
+                      id="cert"
+                      className="hidden"
+                      accept=".pdf,image/*"
+                      {...register("certificateUrl")}
+                    />
+                    <label
+                      htmlFor="cert"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <Upload
+                        size={20}
+                        className={
+                          errors.certificateUrl
+                            ? "text-red-500"
+                            : "text-blue-600"
+                        }
+                      />
+                      <span className="text-sm font-medium">
+                        {selectedFile?.[0]
+                          ? selectedFile[0].name
+                          : "Subir PDF del certificado"}
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
-          </form>
+            </form>
+          </div>
         </ScrollArea>
-
-        {/* Footer fijo fuera del scroll */}
-        <div className="p-6 border-t bg-slate-50 rounded-b-lg">
+        <div className="p-6 border-t bg-white shrink-0">
           <Button
             type="submit"
             form="equipment-form"
-            className="w-full bg-blue-600 h-11 font-bold"
-            disabled={createEquipment.isPending}
+            className="w-full bg-blue-600 h-12 font-bold uppercase tracking-wider shadow-lg active:scale-[0.98] transition-transform"
+            disabled={createEquipment.isPending || updateEquipment.isPending}
           >
-            {createEquipment.isPending ? (
+            {createEquipment.isPending || updateEquipment.isPending ? (
               <Loader2 className="animate-spin" />
+            ) : isEditing ? (
+              <span className="flex items-center gap-2">
+                <Save size={18} /> Actualizar Equipo
+              </span>
             ) : (
-              "REGISTRAR EQUIPO TÉCNICO"
+              "Registrar"
             )}
           </Button>
         </div>

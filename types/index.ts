@@ -1,4 +1,4 @@
-import { ProtocolField } from "@/hooks/useProtocols";
+import { OrganizationProtocol } from "@/hooks/useProtocols";
 
 export interface ApiPaginationMeta {
   total: number;
@@ -24,6 +24,13 @@ export interface Protocol {
   updatedAt: string;
 }
 
+export interface Role {
+  id: string;
+  key: string;
+  name: string;
+  isSystem: boolean;
+}
+
 export type JsonValue =
   | string
   | number
@@ -41,6 +48,15 @@ export interface LoginDto {
   password: string;
 }
 
+export interface UserRole {
+  id: string;
+  roleId: string;
+  role: {
+    name: string;
+    key: string;
+  };
+}
+
 export interface User {
   id: string;
   email: string;
@@ -48,6 +64,7 @@ export interface User {
   isActive: boolean;
   roles: string[];
   organizationId: string;
+  professionalLicense?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,12 +75,30 @@ export interface ContactInfo {
   name?: string;
 }
 
+export interface ContactInfo {
+  alternativeEmail?: string;
+  notes?: string;
+  internalCode?: string;
+}
+
 export interface Client {
   id: string;
   businessName: string;
-  taxId?: string;
+  taxId: string;
   isActive: boolean;
-  contactInfo: ContactInfo;
+
+  contactName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+
+  contactPosition?: string | null;
+  contactInfo?: ContactInfo | null;
+
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  organizationId?: string;
 }
 
 export interface Project {
@@ -117,6 +152,7 @@ export type OrderStatus =
 export interface WorkOrder {
   id: string;
   projectId: string;
+  code: string;
   createdById: string;
   assignedTechId: string | null;
   status: OrderStatus;
@@ -145,6 +181,7 @@ export type SyncStatus = "SYNCED" | "PENDING" | "FAILED";
 export interface TestRun {
   id: string;
   workOrderId: string;
+  workOrder?: WorkOrder;
   assetId: string;
   protocolVersionId: string;
   createdById?: string; // Lo hacemos opcional por si el backend no siempre lo envía
@@ -152,6 +189,7 @@ export interface TestRun {
   startedAt: string | null;
   finishedAt: string | null;
   metadata?: JsonValue | null;
+  protocolVersion?: OrganizationProtocolVersion;
   values: Record<string, unknown>; // El campo que usa tu formulario de "Ejecutar Prueba"
   asset?: Asset;
   protocol?: {
@@ -200,14 +238,110 @@ export interface PaginatedResponse<T> {
 export interface MeasurementEquipment {
   id: string;
   name: string;
-  brand: string;
-  model: string;
-  serialNumber: string;
-  internalCode: string;
-  status: "CALIBRATED" | "EXPIRED" | "MAINTENANCE" | "OUT_OF_SERVICE";
-  lastCalibration: string;
-  nextCalibration: string;
-  certificateUrl?: string;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  internalCode: string | null;
+
+  lastCalibrationAt: string | null;
+  calibrationDueAt: string | null;
+  certificateNumber: string | null;
+  certificateUrl: string | null;
+
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CapturedValue = string | number | boolean | CapturedDataRecord[];
+
+export interface CapturedDataRecord {
+  [key: string]: CapturedValue;
+}
+
+export interface TestRunPayload {
+  workOrderId: string;
+  assetId: string;
+  protocolVersionId: string;
+  capturedData: CapturedDataRecord;
+  status: "DRAFT" | "SUBMITTED";
+}
+
+export interface ProtocolField {
+  name: string;
+  label: string;
+  type:
+    | "text"
+    | "number"
+    | "date"
+    | "select"
+    | "textarea"
+    | "file"
+    | "signature";
+  required: boolean;
+  options?: string[]; // Para campos tipo 'select'
+  step?: string | number;
+  min?: number;
+  max?: number;
+}
+
+export interface ProtocolSection {
+  id: string;
+  label: string;
+  fields: ProtocolField[];
+  type?: "array" | "object";
+}
+
+export interface ProtocolSchema {
+  protocol_name: string;
+  version: string;
+  sections: ProtocolSection[];
+  globalRules?: {
+    requiresCalibration?: boolean;
+    autoCalculateDeltaT?: boolean;
+  };
+}
+
+export interface FormulaDefinition {
+  targetField: string; // Campo donde se guarda el resultado (ej: delta_temp_c)
+  expression: string; // String de la fórmula (ej: "temp_maxima_c - temp_referencia_c")
+  unit?: string; // Unidad de medida (ej: °C)
+  precision?: number; // Cantidad de decimales
+}
+
+// 2. Tipado para requisitos de cumplimiento (Normas/Validaciones)
+export interface ProtocolRequirement {
+  id: string;
+  description: string;
+  source: string; // Norma asociada (ej: ISO 18434-1)
+  validationRules: {
+    field: string;
+    operator: ">" | "<" | "==" | "range";
+    criticalValue: number | string;
+    severityIfFailed: "BAJA" | "MEDIA" | "ALTA" | "CRITICA";
+  }[];
+}
+
+// 3. Tipado para el mapeo visual en el PDF final
+export interface PdfTemplateMapping {
+  pageNumber: number;
+  coordinates: { x: number; y: number };
+  fieldId: string; // Mapeo directo al JSON Schema
+  fontSize?: number;
+  alignment?: "left" | "center" | "right";
+}
+
+export interface OrganizationProtocolVersion {
+  id: string;
+  organizationId: string;
+  organizationProtocolId: string;
+  versionNumber: number;
+  schemaDefinition: ProtocolSchema;
+  formulaDefinition?: FormulaDefinition[];
+  requirements?: ProtocolRequirement[];
+  pdfTemplateMapping?: PdfTemplateMapping[];
+  isActive: boolean;
+  organizationProtocol: OrganizationProtocol;
   createdAt: string;
   updatedAt: string;
 }

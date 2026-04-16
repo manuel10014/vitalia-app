@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Plus, Building2 } from "lucide-react";
+import { Search, Plus, Building2, MapPin } from "lucide-react";
 import api from "@/lib/api";
 
 import { useClients } from "@/hooks/useAdmin";
@@ -40,7 +40,9 @@ export default function ClientsPage() {
       (client) =>
         client.businessName.toLowerCase().includes(lowerSearch) ||
         client.taxId?.toLowerCase().includes(lowerSearch) ||
-        client.contactInfo?.email?.toLowerCase().includes(lowerSearch),
+        client.email?.toLowerCase().includes(lowerSearch) ||
+        client.contactName?.toLowerCase().includes(lowerSearch) ||
+        client.city?.toLowerCase().includes(lowerSearch),
     );
   }, [response?.data, searchTerm]);
 
@@ -57,6 +59,7 @@ export default function ClientsPage() {
     setSelectedClient(null);
     setIsSheetOpen(true);
   };
+
   const mutationToggle = useMutation({
     mutationFn: (client: Client) =>
       api.patch(`/clients/${client.id}/active`, { isActive: !client.isActive }),
@@ -86,7 +89,7 @@ export default function ClientsPage() {
           <div className={styles.searchWrapper}>
             <Search className={styles.searchIcon} />
             <Input
-              placeholder="Buscar por nombre, NIT o email..."
+              placeholder="Buscar por nombre, NIT, email o ciudad..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.inputSearch}
@@ -116,9 +119,12 @@ export default function ClientsPage() {
               render: (c) => (
                 <div className={styles.companyCell}>
                   <span className={styles.companyName}>{c.businessName}</span>
-                  <span className={styles.uuidLabel}>
-                    UUID: {c.id.slice(0, 8)}
-                  </span>
+                  <div className={styles.locationInfo}>
+                    <MapPin size={12} className="inline mr-1 opacity-60" />
+                    <span className={styles.cityText}>
+                      {c.city || "Sin ciudad"}
+                    </span>
+                  </div>
                 </div>
               ),
             },
@@ -129,20 +135,18 @@ export default function ClientsPage() {
               ),
             },
             {
-              header: "Información de Contacto",
-              render: (c) => {
-                const info = c.contactInfo || {};
-                return (
-                  <div className={styles.contactInfo}>
-                    <span className={styles.emailText}>
-                      {info.email || "—"}
-                    </span>
-                    <span className={styles.phoneText}>
-                      {info.phone || "Sin teléfono"}
-                    </span>
-                  </div>
-                );
-              },
+              header: "Contacto Principal", // 2. Renderizado directo sin contactInfo
+              render: (c) => (
+                <div className={styles.contactInfo}>
+                  <span className={styles.contactName}>
+                    {c.contactName || "—"}
+                  </span>
+                  <span className={styles.emailText}>{c.email || "—"}</span>
+                  <span className={styles.phoneText}>
+                    {c.phone || "Sin teléfono"}
+                  </span>
+                </div>
+              ),
             },
             {
               header: "Estado",
