@@ -22,39 +22,42 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Loader2,
   ClipboardList,
   MapPin,
-  Calendar,
   AlertCircle,
   Briefcase,
   Tag,
+  Settings2,
+  X,
+  FileText,
 } from "lucide-react";
 import { ApiErrorResponse, Project, User } from "@/types";
 import { toast } from "sonner";
 import styles from "./CreateWorkOrder.module.css";
 import { AxiosError } from "axios";
+import { OrganizationProtocol } from "@/hooks/useProtocols";
 
 export function CreateWorkOrderDialog() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Estados del formulario (Sincronizados con el modelo WorkOrder de Prisma)
+  // --- Estados del Formulario ---
   const [projectId, setProjectId] = useState("");
   const [assignedTechId, setAssignedTechId] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
-  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("MEDIA");
   const [contractRef, setContractRef] = useState("");
   const [address, setAddress] = useState("");
-
-  // Nota: Si el backend no genera el 'code' automáticamente, necesitamos pedirlo o generarlo
+  const [observations, setObservations] = useState(""); //  Nuevo
   const [code, setCode] = useState("");
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  // Query de Proyectos
-  const { data: projects, isLoading: loadingProjects } = useQuery<Project[]>({
+  // --- Queries ---
+  const { data: projects } = useQuery<Project[]>({
     queryKey: ["projects"],
     queryFn: async () => {
       const response = await api.get("/projects");
@@ -62,8 +65,7 @@ export function CreateWorkOrderDialog() {
     },
   });
 
-  // Query de Usuarios (Cargamos todos para seleccionar técnico)
-  const { data: techs, isLoading: loadingTechs } = useQuery<User[]>({
+  const { data: techs } = useQuery<User[]>({
     queryKey: ["users-for-selection"],
     queryFn: async () => {
       const response = await api.get("/users", { params: { limit: 100 } });
@@ -72,22 +74,68 @@ export function CreateWorkOrderDialog() {
     },
   });
 
+  const { data: availableServices } = useQuery<OrganizationProtocol[]>({
+    queryKey: ["admin", "protocols"],
+    queryFn: async () => {
+      const response = await api.get("/org-protocols");
+      return response.data.data;
+    },
+  });
+
+  interface GeoLoc {
+    lat?: number;
+    lng?: number;
+  }
+
+  const handleProjectChange = (id: string) => {
+    setProjectId(id);
+
+    if (projects) {
+      const selectedProject = projects.find((p) => p.id === id);
+
+      // 1. Extraer dirección del cliente (Relación)
+      if (selectedProject?.client?.address) {
+        setAddress(selectedProject.client.address);
+      }
+
+      // 2. Extraer Lat/Lng del Json 'geoLocation' del Proyecto
+      const geo = selectedProject?.geoLocation as GeoLoc;
+      if (geo?.lat && geo?.lng) {
+        // Podemos guardar esto en las observaciones o en el metadata de la OT
+        const coordsString = `Ubicación GPS: ${geo.lat}, ${geo.lng}`;
+
+        // Si el usuario no ha escrito nada en observaciones, lo ponemos ahí
+        if (!observations) {
+          setObservations((prev) =>
+            prev ? `${prev}\n${coordsString}` : coordsString,
+          );
+        }
+
+        toast.info(`Coordenadas cargadas: ${geo.lat}, ${geo.lng}`, {
+          icon: <MapPin size={14} />,
+        });
+      }
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: async () => {
-      // Objeto final para el POST
       const payload = {
         projectId,
         assignedTechId,
-        // En Prisma es scheduled_date (DateTime?)
         scheduledDate: scheduledDate
           ? new Date(scheduledDate).toISOString()
           : null,
-        description,
-        priority, // "BAJA", "MEDIA", "ALTA", "URGENTE"
+        priority,
         address,
-        contractRef, // mapeado a contract_ref
+        contractRef,
+        observations,
         status: "ASSIGNED",
-        code: code || `OT-${Date.now()}`, // Requerido por el @unique de Prisma
+        code: code || `OT-${Date.now()}`,
+        //  Como no hay serviceIds en el esquema, lo guardamos en metadata por ahora
+        metadata: {
+          plannedServices: selectedServices,
+        },
       };
 
       return await api.post("/work-orders", payload);
@@ -99,9 +147,7 @@ export function CreateWorkOrderDialog() {
       resetForm();
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
-      const message =
-        error.response?.data?.message ||
-        "Error 400: Verifique los campos obligatorios";
+      const message = error.response?.data?.message || "Error al crear la OT";
       toast.error(Array.isArray(message) ? message[0] : message);
     },
   });
@@ -110,14 +156,23 @@ export function CreateWorkOrderDialog() {
     setProjectId("");
     setAssignedTechId("");
     setScheduledDate("");
-    setDescription("");
     setPriority("MEDIA");
     setContractRef("");
     setAddress("");
+    setObservations("");
     setCode("");
+    setSelectedServices([]);
   };
 
-  const isFormInvalid = !projectId || !assignedTechId || !description;
+  const toggleService = (id: string) => {
+    if (!id) return;
+    setSelectedServices((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  };
+
+  const isFormInvalid =
+    !projectId || !assignedTechId || !code || selectedServices.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -139,32 +194,42 @@ export function CreateWorkOrderDialog() {
 
         <ScrollArea className={styles.scrollArea}>
           <div className={styles.formContainer}>
-            {/* Código de la OT (Requerido por @unique en Prisma) */}
-            <div className={styles.fieldGroup}>
-              <Label className={styles.label}>Código de Orden *</Label>
-              <div className={styles.inputIconWrapper}>
-                <Tag className={styles.inputIcon} size={16} />
-                <Input
-                  placeholder="Ej: OT-2024-001"
-                  className={styles.inputWithIcon}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                />
+            {/* Fila 1: Código y Referencia */}
+            <div className={styles.grid}>
+              <div className={styles.fieldGroup}>
+                <Label className={styles.label}>Código de Orden *</Label>
+                <div className={styles.inputIconWrapper}>
+                  <Tag className={styles.inputIcon} size={16} />
+                  <Input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="Ej: OT-2024-001"
+                    className={styles.inputWithIcon}
+                  />
+                </div>
+              </div>
+              <div className={styles.fieldGroup}>
+                <Label className={styles.label}>
+                  Ref. Contrato / Cotización
+                </Label>
+                <div className={styles.inputIconWrapper}>
+                  <Briefcase className={styles.inputIcon} size={16} />
+                  <Input
+                    value={contractRef}
+                    onChange={(e) => setContractRef(e.target.value)}
+                    placeholder="Opcional"
+                    className={styles.inputWithIcon}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Selección de Proyecto */}
             <div className={styles.fieldGroup}>
-              <Label className={styles.label}>Proyecto *</Label>
-              <Select onValueChange={setProjectId} value={projectId}>
+              <Label className={styles.label}>Proyecto del Cliente *</Label>
+              <Select onValueChange={handleProjectChange} value={projectId}>
                 <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      loadingProjects
-                        ? "Cargando..."
-                        : "Seleccionar proyecto..."
-                    }
-                  />
+                  <SelectValue placeholder="Seleccionar proyecto..." />
                 </SelectTrigger>
                 <SelectContent>
                   {projects?.map((p) => (
@@ -176,15 +241,66 @@ export function CreateWorkOrderDialog() {
               </Select>
             </div>
 
-            {/* Descripción */}
+            {/*  SECCIÓN DE SERVICIOS (Igual que antes) */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <Label className="flex items-center gap-2 mb-3 text-slate-700 font-bold">
+                <Settings2 size={16} className="text-blue-600" />
+                Servicios a Realizar *
+              </Label>
+              <Select onValueChange={toggleService}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Agregar servicio técnico..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableServices?.map((s) => (
+                    <SelectItem
+                      key={s.id}
+                      value={s.id}
+                      disabled={selectedServices.includes(s.id)}
+                    >
+                      {s.globalProtocol.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {selectedServices.map((id) => {
+                  const s = availableServices?.find((x) => x.id === id);
+                  return (
+                    <Badge
+                      key={id}
+                      variant="secondary"
+                      className="pl-3 pr-1 py-1 gap-1 bg-white border-blue-200"
+                    >
+                      {s?.globalProtocol.name}
+                      <X
+                        size={14}
+                        className="cursor-pointer text-red-500"
+                        onClick={() => toggleService(id)}
+                      />
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/*  NUEVO: Observaciones Previas (Aprovechando el esquema) */}
             <div className={styles.fieldGroup}>
-              <Label className={styles.label}>Descripción del Trabajo *</Label>
-              <Textarea
-                placeholder="Actividades a realizar..."
-                className="min-h-[100px] resize-none"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <Label className={styles.label}>
+                Observaciones Logísticas / Riesgos
+              </Label>
+              <div className="relative">
+                <FileText
+                  className="absolute left-3 top-3 text-slate-400"
+                  size={16}
+                />
+                <Textarea
+                  placeholder="Ej: Requiere andamios, zona con ruido extremo, etc."
+                  className="pl-10 min-h-[80px] bg-amber-50/30 border-amber-100"
+                  value={observations}
+                  onChange={(e) => setObservations(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Técnico y Prioridad */}
@@ -196,9 +312,7 @@ export function CreateWorkOrderDialog() {
                   value={assignedTechId}
                 >
                   <SelectTrigger>
-                    <SelectValue
-                      placeholder={loadingTechs ? "Cargando..." : "Asignar..."}
-                    />
+                    <SelectValue placeholder="Asignar..." />
                   </SelectTrigger>
                   <SelectContent>
                     {techs?.map((t) => (
@@ -209,7 +323,6 @@ export function CreateWorkOrderDialog() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className={styles.fieldGroup}>
                 <Label className={styles.label}>Prioridad</Label>
                 <Select onValueChange={setPriority} value={priority}>
@@ -226,52 +339,34 @@ export function CreateWorkOrderDialog() {
               </div>
             </div>
 
-            {/* Fecha y Referencia */}
+            {/* Fecha y Dirección */}
             <div className={styles.grid}>
               <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Fecha Programada</Label>
-                <div className={styles.inputIconWrapper}>
-                  <Calendar className={styles.inputIcon} size={16} />
-                  <Input
-                    type="date"
-                    className={styles.inputWithIcon}
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                  />
-                </div>
+                <Label className={styles.label}>Fecha Ejecución</Label>
+                <Input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                />
               </div>
               <div className={styles.fieldGroup}>
-                <Label className={styles.label}>Ref. Contrato</Label>
+                <Label className={styles.label}>Dirección del Sitio</Label>
                 <div className={styles.inputIconWrapper}>
-                  <Briefcase className={styles.inputIcon} size={16} />
+                  <MapPin className={styles.inputIcon} size={16} />
                   <Input
-                    placeholder="Contrato/Cotización"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Se hereda del proyecto"
                     className={styles.inputWithIcon}
-                    value={contractRef}
-                    onChange={(e) => setContractRef(e.target.value)}
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Dirección */}
-            <div className={styles.fieldGroup}>
-              <Label className={styles.label}>Dirección del Sitio</Label>
-              <div className={styles.inputIconWrapper}>
-                <MapPin className={styles.inputIcon} size={16} />
-                <Input
-                  placeholder="Lugar de intervención..."
-                  className={styles.inputWithIcon}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
               </div>
             </div>
 
             {isFormInvalid && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-amber-50 text-amber-700 text-xs font-medium border border-amber-100">
                 <AlertCircle size={14} />
-                Complete Código, Proyecto, Técnico y Descripción.
+                Complete los campos marcados con (*) y seleccione servicios.
               </div>
             )}
           </div>
@@ -284,12 +379,9 @@ export function CreateWorkOrderDialog() {
             disabled={mutation.isPending || isFormInvalid}
           >
             {mutation.isPending ? (
-              <>
-                <Loader2 className="animate-spin mr-2" size={18} />
-                CREANDO...
-              </>
+              <Loader2 className="animate-spin" size={20} />
             ) : (
-              "CONFIRMAR ORDEN DE TRABAJO"
+              "CREAR ORDEN DE TRABAJO"
             )}
           </Button>
         </div>

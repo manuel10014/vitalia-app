@@ -12,9 +12,9 @@ import {
   FolderKanban,
   Box,
   Settings,
-  Beaker,
   ShieldCheck,
   Tags,
+  Zap,
 } from "lucide-react";
 
 interface NavItem {
@@ -25,23 +25,24 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
+  { href: "/admin/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/admin/work-orders", label: "Órdenes (OT)", icon: ClipboardList },
   { href: "/admin/test-runs", label: "Ejecuciones", icon: FlaskConical },
   { href: "/admin/reports", label: "Reportes", icon: FileText },
 ];
 
 const engineeringItems: NavItem[] = [
-  { href: "/admin/protocols", label: "Protocolos", icon: Beaker },
   { href: "/admin/equipment", label: "Equipos Medición", icon: ShieldCheck },
+  { href: "/admin/protocols", label: "Servicios", icon: Zap },
 ];
 
 const adminItems: NavItem[] = [
   { href: "/admin/clients", label: "Clientes", icon: Users },
-  { href: "/admin/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/admin/assets", label: "Activos", icon: Box },
   { href: "/admin/categories", label: "Categorías", icon: Tags },
   { href: "/admin/users", label: "Usuarios", icon: Settings },
 ];
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -76,17 +77,15 @@ export function Sidebar() {
       </div>
 
       <div className={styles.scrollArea}>
-        {/* OPERACIONES */}
         <nav>
-          <p className={styles.sectionTitle}>Operaciones</p>
+          <p className={styles.sectionTitle}>Estructura</p>
           <div className={styles.navGroup}>
-            {navItems.map((item) => (
+            {adminItems.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
           </div>
         </nav>
 
-        {/* INGENIERÍA */}
         <nav>
           <p className={styles.sectionTitle}>Ingeniería</p>
           <div className={styles.navGroup}>
@@ -96,25 +95,14 @@ export function Sidebar() {
           </div>
         </nav>
 
-        {/* ADMINISTRACIÓN */}
         <nav>
-          <p className={styles.sectionTitle}>Estructura</p>
+          <p className={styles.sectionTitle}>Operaciones</p>
           <div className={styles.navGroup}>
-            {adminItems.map((item) => (
+            {navItems.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
           </div>
         </nav>
-      </div>
-
-      <div className={styles.footer}>
-        <div className={styles.profileContainer}>
-          <div className={styles.avatar} />
-          <div className={styles.profileInfo}>
-            <p className={styles.profileName}>Powered by Vitalia</p>
-            <p className={styles.versionTag}>v1.0</p>
-          </div>
-        </div>
       </div>
     </aside>
   );

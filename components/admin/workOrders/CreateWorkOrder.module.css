@@ -81,20 +81,28 @@
   cursor: not-allowed;
 }
 
-/* Estilo para los iconos decorativos en los inputs */
 .inputIconWrapper {
   position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .inputIcon {
   position: absolute;
-  left: 0.75rem;
+  left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
   pointer-events: none;
+  z-index: 20;
 }
 
 .inputWithIcon {
-  padding-left: 2.5rem !important;
+  padding-left: 2.75rem !important;
+  background-color: #ffffff;
+}
+
+.inputIconWrapper:focus-within .inputIcon {
+  color: #2563eb;
 }

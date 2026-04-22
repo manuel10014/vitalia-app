@@ -4,10 +4,12 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { ApiErrorResponse, ApiPaginationMeta } from "@/types";
 
+// --- Interfaces de Dominio ---
+
 export interface ProtocolField {
   id: string;
   label: string;
-  type: "text" | "number" | "select" | "check";
+  type: "text" | "number" | "select" | "check" | "image";
   unit?: string;
   required: boolean;
   options?: string[];
@@ -60,9 +62,18 @@ export interface GlobalProtocol {
   isActive: boolean;
 }
 
+// Interfaz para la respuesta de adopción (lo que espera tu LibraryPage)
+export interface AdoptResponse {
+  id: string;
+  organizationId: string;
+  globalProtocolId: string;
+  activeVersionId: string;
+}
+
 export function useProtocols() {
   const queryClient = useQueryClient();
 
+  // 1. Obtener protocolos de la organización
   const {
     data: orgProtocolsResponse,
     isLoading: isLoadingOrg,
@@ -70,31 +81,31 @@ export function useProtocols() {
   } = useQuery({
     queryKey: ["admin", "protocols"],
     queryFn: async () => {
-      const { data } = await api.get<{
+      const response = await api.get<{
         data: OrganizationProtocol[];
         meta: ApiPaginationMeta;
       }>("/org-protocols");
-      return data;
+      return response.data;
     },
   });
 
+  // 2. Obtener protocolos globales (Biblioteca)
   const { data: globalResponse, isLoading: isLoadingGlobals } = useQuery({
     queryKey: ["global-protocols"],
     queryFn: async () => {
-      const { data } = await api.get<{
+      const response = await api.get<{
         data: GlobalProtocol[];
         meta: ApiPaginationMeta;
       }>("/global-protocols");
-      return data;
+      return response.data;
     },
   });
 
-  // 3. Obtener versión específica (Busca en cache primero, si no, pide al servidor)
+  // 3. Obtener versión específica
   const useProtocolVersion = (versionId: string) => {
     return useQuery({
       queryKey: ["admin", "protocols", "version", versionId],
       queryFn: async () => {
-        // Intentar recuperar de la lista ya cargada para ahorrar tráfico
         const cache = queryClient.getQueryData<{
           data: OrganizationProtocol[];
         }>(["admin", "protocols"]);
@@ -114,14 +125,17 @@ export function useProtocols() {
     });
   };
 
-  // 4. Mutación: Adoptar Protocolo de la biblioteca
+  // 4. Mutación: Adoptar Protocolo (CORREGIDO: Retorna .data)
   const adoptProtocol = useMutation({
     mutationFn: async (globalProtocolId: string) => {
-      return await api.post(`/org-protocols/adopt/${globalProtocolId}`, {});
+      const response = await api.post<AdoptResponse>(
+        `/org-protocols/adopt/${globalProtocolId}`,
+        {},
+      );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "protocols"] });
-      toast.success("Protocolo adoptado con éxito");
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
       const msg = err.response?.data?.message;
@@ -129,7 +143,7 @@ export function useProtocols() {
     },
   });
 
-  // 5. Mutación: Actualizar Esquema (Guardar diseño del Builder)
+  // 5. Mutación: Actualizar Esquema (Builder)
   const updateSchema = useMutation({
     mutationFn: async ({
       orgProtocolId,
@@ -140,10 +154,11 @@ export function useProtocols() {
       versionId: string;
       schema: ProtocolSchema;
     }) => {
-      return await api.patch(
+      const response = await api.patch(
         `/org-protocols/${orgProtocolId}/versions/${versionId}`,
         { schemaDefinition: schema },
       );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "protocols"] });
@@ -155,6 +170,7 @@ export function useProtocols() {
     },
   });
 
+  // 6. Mutación: Crear Protocolo Global
   const createGlobalProtocol = useMutation({
     mutationFn: async (newProtocol: {
       name: string;
@@ -162,7 +178,8 @@ export function useProtocols() {
       category: string;
       description?: string;
     }) => {
-      return await api.post("/global-protocols", newProtocol);
+      const response = await api.post("/global-protocols", newProtocol);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["global-protocols"] });
@@ -173,10 +190,13 @@ export function useProtocols() {
     },
   });
 
-  // 6. Mutación: Cambiar estado Activo/Inactivo
+  // 7. Mutación: Toggle Status
   const toggleStatus = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      return await api.patch(`/org-protocols/${id}/active`, { isActive });
+      const response = await api.patch(`/org-protocols/${id}/active`, {
+        isActive,
+      });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "protocols"] });
@@ -184,7 +204,6 @@ export function useProtocols() {
   });
 
   return {
-    // Retornamos arrays limpios para los componentes
     protocols: orgProtocolsResponse?.data || [],
     globalProtocols: globalResponse?.data || [],
     isLoading: isLoadingOrg || isLoadingGlobals,

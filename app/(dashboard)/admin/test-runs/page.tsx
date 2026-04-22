@@ -17,7 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-// 🟢 Cambiamos al nuevo Launcher
+//  Cambiamos al nuevo Launcher
 import { RunTestLauncher } from "@/components/admin/runTests/RunTestLauncher";
 import styles from "./test-runs.module.css";
 
@@ -73,7 +73,7 @@ export default function TestRunsPage() {
             Monitoreo en tiempo real de pruebas y protocolos de ingeniería.
           </p>
         </div>
-        {/* 🟢 Launcher que inicia el flujo de 3 pasos */}
+        {/*  Launcher que inicia el flujo de 3 pasos */}
         <RunTestLauncher />
       </header>
 
@@ -103,7 +103,7 @@ export default function TestRunsPage() {
                     variant="outline"
                     className="cursor-pointer hover:bg-blue-50 border-blue-200 text-blue-700 gap-1 font-mono py-1"
                   >
-                    {/* 🟢 Usamos el code de la OT si está disponible */}
+                    {/*  Usamos el code de la OT si está disponible */}
                     {tr.workOrder?.code || `#${tr.workOrderId.split("-")[0]}`}
                     <ExternalLink size={10} />
                   </Badge>

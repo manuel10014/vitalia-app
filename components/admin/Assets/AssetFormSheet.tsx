@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Settings2, Plus, Trash2, Info, Factory } from "lucide-react";
 import api from "@/lib/api";
@@ -58,6 +58,7 @@ interface AssetFormProps {
 export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
   const isEditing = !!asset;
   const { data: categories = [] } = useAssetCategories();
+  const queryClient = useQueryClient();
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -142,6 +143,7 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
       return await api.post("/assets", finalPayload);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
       toast.success(isEditing ? "Activo actualizado" : "Activo registrado");
       onOpenChange(false);
     },

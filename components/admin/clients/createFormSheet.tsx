@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm, Controller, FieldErrors } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+import {
+  useForm,
+  Controller,
+  FieldErrors,
+  useWatch,
+  SubmitHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -40,25 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Listado de ciudades principales de Colombia
-const COLOMBIAN_CITIES = [
-  "Bogotá, D.C.",
-  "Medellín",
-  "Cali",
-  "Barranquilla",
-  "Cartagena",
-  "Santamarta",
-  "Bucaramanga",
-  "Pereira",
-  "Manizales",
-  "Cúcuta",
-  "Ibagué",
-  "Villavicencio",
-  "Montería",
-  "Pastos",
-  "Neiva",
-];
+import COLOMBIA_DATA from "./colombia.json";
 
 interface ClientFormSheetProps {
   open: boolean;
@@ -83,6 +71,7 @@ export function ClientFormSheet({
       email: "",
       phone: "",
       address: "",
+      state: "",
       city: "",
       isActive: true,
     },
@@ -93,8 +82,28 @@ export function ClientFormSheet({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = form;
+
+  const selectedState = useWatch({
+    control,
+    name: "state",
+  });
+
+  const availableCities = useMemo(() => {
+    if (!selectedState) return [];
+    const deptObj = COLOMBIA_DATA.find((d) => d.departamento === selectedState);
+    return deptObj ? deptObj.ciudades : [];
+  }, [selectedState]);
+
+  useEffect(() => {
+    const isStateDirty = form.getFieldState("state").isDirty;
+
+    if (isStateDirty && selectedState) {
+      setValue("city", "", { shouldValidate: true });
+    }
+  }, [selectedState, setValue, form]);
 
   useEffect(() => {
     if (open) {
@@ -106,6 +115,7 @@ export function ClientFormSheet({
           email: client.email || "",
           phone: client.phone || "",
           address: client.address || "",
+          state: client.state || "",
           city: client.city || "",
           isActive: client.isActive,
         });
@@ -117,6 +127,7 @@ export function ClientFormSheet({
           email: "",
           phone: "",
           address: "",
+          state: "",
           city: "",
           isActive: true,
         });
@@ -134,7 +145,6 @@ export function ClientFormSheet({
       queryClient.invalidateQueries({
         queryKey: ["admin", "clients"],
       });
-
       toast.success(isEditing ? "Cliente actualizado" : "Cliente registrado");
       onOpenChange(false);
     },
@@ -146,7 +156,7 @@ export function ClientFormSheet({
     },
   });
 
-  const onSubmit = (data: ClientFormData) => {
+  const onSubmit: SubmitHandler<ClientFormData> = (data) => {
     mutation.mutate(data);
   };
 
@@ -203,32 +213,71 @@ export function ClientFormSheet({
                     className={errors.taxId ? styles.inputError : ""}
                     placeholder="900.000.000-1"
                   />
+                  {errors.taxId && (
+                    <p className={styles.errorText}>{errors.taxId.message}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             <Separator />
 
-            {/* Sección Ubicación con SELECT */}
+            {/* Sección Ubicación Geográfica */}
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
-                <MapPin size={16} />
-                <span className={styles.sectionLabel}>Ubicación</span>
+                <MapPin size={16} className="text-blue-600" />
+                <span className={styles.sectionLabel}>
+                  Ubicación Geográfica
+                </span>
               </div>
+
+              <div className={styles.fieldGroup}>
+                <Label>Dirección de Operaciones *</Label>
+                <Input
+                  {...register("address")}
+                  className={errors.address ? styles.inputError : ""}
+                  placeholder="Ej: Zona Industrial Etapa 1"
+                />
+                {errors.address && (
+                  <p className={styles.errorText}>{errors.address.message}</p>
+                )}
+              </div>
+
               <div className={styles.fieldGrid}>
+                {/* SELECT: DEPARTAMENTO */}
                 <div className={styles.fieldGroup}>
-                  <Label>Dirección *</Label>
-                  <Input
-                    {...register("address")}
-                    className={errors.address ? styles.inputError : ""}
-                    placeholder="Calle 100 # 15-20"
+                  <Label>Departamento *</Label>
+                  <Controller
+                    control={control}
+                    name="state"
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger
+                          className={errors.state ? styles.inputError : ""}
+                        >
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COLOMBIA_DATA.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.departamento}>
+                              {dept.departamento}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
-                  {errors.address && (
-                    <p className={styles.errorText}>{errors.address.message}</p>
+                  {errors.state && (
+                    <p className={styles.errorText}>{errors.state.message}</p>
                   )}
                 </div>
+
+                {/* SELECT: CIUDAD */}
                 <div className={styles.fieldGroup}>
-                  <Label>Ciudad *</Label>
+                  <Label>Municipio / Ciudad *</Label>
                   <Controller
                     control={control}
                     name="city"
@@ -236,14 +285,21 @@ export function ClientFormSheet({
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
+                        disabled={!selectedState}
                       >
                         <SelectTrigger
                           className={errors.city ? styles.inputError : ""}
                         >
-                          <SelectValue placeholder="Seleccionar ciudad..." />
+                          <SelectValue
+                            placeholder={
+                              selectedState
+                                ? "Elegir municipio..."
+                                : "Primero depto."
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {COLOMBIAN_CITIES.map((city) => (
+                          {availableCities.map((city) => (
                             <SelectItem key={city} value={city}>
                               {city}
                             </SelectItem>
@@ -328,7 +384,7 @@ export function ClientFormSheet({
           <Button
             form="client-form"
             type="submit"
-            className="w-full h-12"
+            className="w-full h-12 font-bold"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? (

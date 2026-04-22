@@ -6,10 +6,11 @@ import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation"; //  Para navegación
 import {
   BookOpen,
   Search,
-  FilePlus2,
+  Settings2, //  Icono más técnico
   ArrowLeft,
   ShieldCheck,
   Loader2,
@@ -17,9 +18,13 @@ import {
 import Link from "next/link";
 import styles from "./library.module.css";
 import { CreateGlobalProtocolModal } from "@/components/admin/protocols/createGlobalProtocols";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { ApiErrorResponse } from "@/types";
 
 export default function LibraryPage() {
   const [search, setSearch] = useState("");
+  const router = useRouter();
   const { globalProtocols, isLoading, adoptProtocol } = useProtocols();
 
   const filtered = useMemo(() => {
@@ -34,6 +39,31 @@ export default function LibraryPage() {
         p.code.toLowerCase().includes(lowerSearch),
     );
   }, [globalProtocols, search]);
+
+  interface AdoptResponse {
+    id: string;
+    organizationId: string;
+    globalProtocolId: string;
+    activeVersionId: string; // El ID que necesitamos para el router
+  }
+  const handleAction = (gpId: string) => {
+    adoptProtocol.mutate(gpId, {
+      onSuccess: (data: AdoptResponse) => {
+        toast.success("Norma vinculada con éxito.");
+        if (data?.activeVersionId) {
+          router.push(`/admin/protocols/builder/${data.activeVersionId}`);
+        }
+      },
+      onError: (error: AxiosError<ApiErrorResponse>) => {
+        if (error.response?.status === 409) {
+          toast.info("Este servicio ya está en Vitalia. Redirigiendo...");
+          router.push("/admin/protocols");
+        } else {
+          toast.error("Error al procesar la norma técnica.");
+        }
+      },
+    });
+  };
 
   return (
     <div className={styles.container}>
@@ -77,7 +107,7 @@ export default function LibraryPage() {
           }
           columns={[
             {
-              header: "Norma / Código",
+              header: "Norma de rereferencia",
               render: (gp) => (
                 <div className={styles.codeCell}>
                   <div className={styles.iconBox}>
@@ -107,17 +137,19 @@ export default function LibraryPage() {
               header: "Acciones de Ingeniería",
               render: (gp) => (
                 <Button
-                  onClick={() => adoptProtocol.mutate(gp.id)}
+                  onClick={() => handleAction(gp.id)}
                   disabled={adoptProtocol.isPending}
                   size="sm"
-                  className={styles.adoptButton}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold"
                 >
                   {adoptProtocol.isPending ? (
                     <Loader2 className="animate-spin mr-2" size={14} />
                   ) : (
-                    <FilePlus2 className="mr-2" size={14} />
+                    <Settings2 className="mr-2" size={14} />
                   )}
-                  {adoptProtocol.isPending ? "Procesando..." : "Adoptar Norma"}
+                  {adoptProtocol.isPending
+                    ? "Configurando..."
+                    : "CONFIGURAR SERVICIO"}
                 </Button>
               ),
             },

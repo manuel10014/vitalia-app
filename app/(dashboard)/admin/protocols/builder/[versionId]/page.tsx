@@ -19,25 +19,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Zap, Image as ImageIcon } from "lucide-react";
 import styles from "./ProtocolBuilder.module.css";
+import { toast } from "sonner";
 
 interface Props {
   versionId: string;
-}
-
-interface SectionItemProps {
-  sIndex: number;
-  control: Control<ProtocolSchema>;
-  register: UseFormRegister<ProtocolSchema>;
-  onRemove: () => void;
 }
 
 export default function ProtocolBuilder({ versionId }: Props) {
   const { useProtocolVersion, updateSchema } = useProtocols();
   const { data: version, isLoading } = useProtocolVersion(versionId);
 
-  const { register, control, handleSubmit } = useForm<ProtocolSchema>({
+  const { register, control, handleSubmit, reset } = useForm<ProtocolSchema>({
     values: version?.schemaDefinition || { sections: [] },
   });
 
@@ -50,6 +44,93 @@ export default function ProtocolBuilder({ versionId }: Props) {
     name: "sections",
   });
 
+  //  FUNCIÓN PARA CARGAR VLF RÁPIDAMENTE
+  const loadVLFTemplate = () => {
+    const vlfTemplate = {
+      sections: [
+        {
+          id: crypto.randomUUID(),
+          title: "Ubicación y Datos del Conductor",
+          fields: [
+            {
+              id: crypto.randomUUID(),
+              label: "Ubicación del Conductor",
+              type: "text",
+              required: true,
+              options: [],
+            },
+            {
+              id: crypto.randomUUID(),
+              label: "Inicio del Conductor",
+              type: "text",
+              required: true,
+              options: [],
+            },
+            {
+              id: crypto.randomUUID(),
+              label: "Final del Conductor",
+              type: "text",
+              required: true,
+              options: [],
+            },
+          ],
+        },
+        {
+          id: crypto.randomUUID(),
+          title: "Parámetros de Ensayo VLF",
+          fields: [
+            {
+              id: crypto.randomUUID(),
+              label: "Longitud",
+              type: "number",
+              unit: "m",
+              required: true,
+              options: [],
+            },
+            {
+              id: crypto.randomUUID(),
+              label: "Tensión Ensayo",
+              type: "number",
+              unit: "kV",
+              required: true,
+              options: [],
+            },
+            {
+              id: crypto.randomUUID(),
+              label: "Corriente Fuga",
+              type: "number",
+              unit: "mA",
+              required: true,
+              options: [],
+            },
+          ],
+        },
+        {
+          id: crypto.randomUUID(),
+          title: "Evidencia Fotográfica",
+          fields: [
+            {
+              id: crypto.randomUUID(),
+              label: "Foto Conexiones",
+              type: "image",
+              required: true,
+              options: [],
+            },
+            {
+              id: crypto.randomUUID(),
+              label: "Foto Resultado Pantalla",
+              type: "image",
+              required: true,
+              options: [],
+            },
+          ],
+        },
+      ],
+    };
+    reset(vlfTemplate as ProtocolSchema);
+    toast.success("Plantilla VLF cargada correctamente");
+  };
+
   const onSave = (data: ProtocolSchema) => {
     if (!version) return;
     updateSchema.mutate({
@@ -59,7 +140,8 @@ export default function ProtocolBuilder({ versionId }: Props) {
     });
   };
 
-  if (isLoading) return <p>Cargando editor de ingeniería...</p>;
+  if (isLoading)
+    return <p className="p-10 text-center">Cargando editor de ingeniería...</p>;
 
   return (
     <div className={styles.builderContainer}>
@@ -69,22 +151,31 @@ export default function ProtocolBuilder({ versionId }: Props) {
             {version?.globalProtocol?.name}
           </h2>
           <p className={styles.versionBadge}>
-            Versión {version?.versionNumber}
+            Versión {version?.versionNumber} - Configuración Técnica
           </p>
         </div>
-        <Button
-          onClick={handleSubmit(onSave)}
-          disabled={updateSchema.isPending}
-          className="gap-2"
-        >
-          {updateSchema.isPending ? (
-            "Guardando..."
-          ) : (
-            <>
-              <Save size={18} /> Guardar Cambios
-            </>
-          )}
-        </Button>
+
+        <div className="flex gap-3">
+          {/*  BOTÓN DE CARGA RÁPIDA VLF */}
+          <Button
+            variant="outline"
+            onClick={loadVLFTemplate}
+            className="border-amber-500 text-amber-600 hover:bg-amber-50 gap-2"
+          >
+            <Zap size={18} /> Cargar Plantilla VLF
+          </Button>
+
+          <Button
+            onClick={handleSubmit(onSave)}
+            disabled={updateSchema.isPending}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Save size={18} />
+            {updateSchema.isPending
+              ? "Guardando en EC2..."
+              : "Publicar Cambios"}
+          </Button>
+        </div>
       </header>
 
       <div className={styles.sectionsList}>
@@ -101,18 +192,29 @@ export default function ProtocolBuilder({ versionId }: Props) {
         <Button
           variant="outline"
           onClick={() =>
-            appendSection({ id: crypto.randomUUID(), title: "", fields: [] })
+            appendSection({
+              id: crypto.randomUUID(),
+              title: "Nueva Sección",
+              fields: [],
+            })
           }
-          className="w-full border-dashed py-8"
+          className="w-full border-dashed py-8 hover:bg-slate-50"
         >
-          <Plus className="mr-2" /> Agregar Nueva Sección
+          <Plus className="mr-2" /> Agregar Nueva Sección de Ingeniería
         </Button>
       </div>
     </div>
   );
 }
 
-export function SectionItem({
+interface SectionItemProps {
+  sIndex: number;
+  control: Control<ProtocolSchema>;
+  register: UseFormRegister<ProtocolSchema>;
+  onRemove: () => void;
+}
+
+function SectionItem({
   sIndex,
   control,
   register,
@@ -124,17 +226,17 @@ export function SectionItem({
     remove,
   } = useFieldArray({
     control,
-    name: `sections.${sIndex}.fields`, // TypeScript validará que esto exista en ProtocolSchema
+    name: `sections.${sIndex}.fields`,
   });
 
   return (
-    <Card className="mb-6 border-l-4 border-l-blue-500 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="mb-6 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-slate-50/50 pb-3">
         <div className="flex-1 mr-4">
           <Input
             {...register(`sections.${sIndex}.title`)}
-            placeholder="Título de la Sección (ej: Datos de Placa)"
-            className="text-lg font-bold border-none focus-visible:ring-0 px-0 h-auto"
+            placeholder="Título de la Sección"
+            className="text-lg font-bold border-none focus-visible:ring-0 bg-transparent px-0 h-auto"
           />
         </div>
         <Button
@@ -142,13 +244,13 @@ export function SectionItem({
           size="icon"
           onClick={onRemove}
           className="text-destructive hover:bg-red-50"
-          type="button" // Importante para evitar submits accidentales
+          type="button"
         >
           <Trash2 size={18} />
         </Button>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="space-y-3">
           {fieldsArray.map((field, fIndex) => (
             <div
@@ -157,30 +259,35 @@ export function SectionItem({
             >
               <div className="flex-1">
                 <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">
-                  Etiqueta del Campo
+                  Etiqueta
                 </Label>
                 <Input
                   {...register(`sections.${sIndex}.fields.${fIndex}.label`)}
-                  placeholder="Ej: Tensión (V)"
+                  placeholder="Ej: Tensión de Ensayo"
                 />
               </div>
 
-              <div className="w-40">
+              <div className="w-44">
                 <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">
-                  Tipo
+                  Tipo de Entrada
                 </Label>
                 <Controller
                   control={control}
                   name={`sections.${sIndex}.fields.${fIndex}.type`}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tipo" />
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="text">Texto</SelectItem>
-                        <SelectItem value="number">Número</SelectItem>
-                        <SelectItem value="select">Selección</SelectItem>
+                        <SelectItem value="text">Texto Libre</SelectItem>
+                        <SelectItem value="number">Valor Numérico</SelectItem>
+                        <SelectItem value="image">
+                          📸 Captura de Foto
+                        </SelectItem>
+                        <SelectItem value="select">
+                          Lista de Selección
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -193,7 +300,8 @@ export function SectionItem({
                 </Label>
                 <Input
                   {...register(`sections.${sIndex}.fields.${fIndex}.unit`)}
-                  placeholder="V, A, ºC"
+                  placeholder="kV, mA..."
+                  className="bg-white"
                 />
               </div>
 
@@ -209,23 +317,42 @@ export function SectionItem({
             </div>
           ))}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={() =>
-              append({
-                id: crypto.randomUUID(),
-                label: "",
-                type: "text",
-                required: true,
-                options: [], // Añadimos esto para cumplir con la interfaz ProtocolField
-              })
-            }
-            className="mt-2 text-blue-600 hover:bg-blue-50"
-          >
-            <Plus size={14} className="mr-1" /> Añadir Campo
-          </Button>
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() =>
+                append({
+                  id: crypto.randomUUID(),
+                  label: "",
+                  type: "number",
+                  required: true,
+                  options: [],
+                })
+              }
+              className="text-blue-600 hover:bg-blue-50"
+            >
+              <Plus size={14} className="mr-1" /> Añadir Parámetro
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() =>
+                append({
+                  id: crypto.randomUUID(),
+                  label: "Registro Fotográfico",
+                  type: "image",
+                  required: true,
+                  options: [],
+                })
+              }
+              className="text-emerald-600 hover:bg-emerald-50"
+            >
+              <ImageIcon size={14} className="mr-1" /> Añadir Foto
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

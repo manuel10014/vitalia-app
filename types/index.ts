@@ -92,7 +92,7 @@ export interface Client {
   phone: string;
   address: string;
   city: string;
-
+  state: string;
   contactPosition?: string | null;
   contactInfo?: ContactInfo | null;
 
@@ -277,6 +277,7 @@ export interface ProtocolField {
     | "select"
     | "textarea"
     | "file"
+    | "image"
     | "signature";
   required: boolean;
   options?: string[]; // Para campos tipo 'select'

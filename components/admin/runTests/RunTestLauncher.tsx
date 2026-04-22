@@ -63,7 +63,7 @@ export function RunTestLauncher() {
       assetId,
       protocolVersionId,
     });
-    router.push(`/admin/run-tests/execute?${params.toString()}`);
+    router.push(`/admin/test-runs/execute?${params.toString()}`);
   };
 
   const isReady = workOrderId && assetId && protocolVersionId;
