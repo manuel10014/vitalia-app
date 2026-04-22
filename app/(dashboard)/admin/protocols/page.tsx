@@ -56,8 +56,7 @@ export default function ProtocolsPage() {
       queryClient.invalidateQueries({ queryKey: ["protocols"] });
 
       toast.success("Servicio inicializado correctamente");
-    } catch (error) {
-      console.error("Error al inicializar:", error.response?.data);
+    } catch {
       toast.error("No se pudo inicializar el servicio");
     }
   };
