@@ -7,7 +7,7 @@ import {
   Control,
   UseFormRegister,
 } from "react-hook-form";
-import { useProtocols, ProtocolSchema } from "@/hooks/useProtocols";
+import { useProtocols } from "@/hooks/useProtocols";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,20 +19,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Plus, Trash2, Save, Zap, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Zap,
+  Image as ImageIcon,
+  Loader2,
+  Layers,
+} from "lucide-react";
 import styles from "./ProtocolBuilder.module.css";
 import { toast } from "sonner";
+import { ProtocolSchema } from "@/types";
 
 interface Props {
   versionId: string;
 }
 
+// Objeto base para evitar errores de tipado (TS2322)
+const DEFAULT_SCHEMA: ProtocolSchema = {
+  protocol_name: "",
+  version: "1.0.0",
+  sections: [],
+};
+
 export default function ProtocolBuilder({ versionId }: Props) {
   const { useProtocolVersion, updateSchema } = useProtocols();
   const { data: version, isLoading } = useProtocolVersion(versionId);
 
+  // Inicialización del formulario con validación de esquema
   const { register, control, handleSubmit, reset } = useForm<ProtocolSchema>({
-    values: version?.schemaDefinition || { sections: [] },
+    values: (version?.schemaDefinition as ProtocolSchema) || DEFAULT_SCHEMA,
   });
 
   const {
@@ -44,9 +61,11 @@ export default function ProtocolBuilder({ versionId }: Props) {
     name: "sections",
   });
 
-  //  FUNCIÓN PARA CARGAR VLF RÁPIDAMENTE
+  // FUNCIÓN PARA CARGAR VLF (Corregida para TS2352)
   const loadVLFTemplate = () => {
-    const vlfTemplate = {
+    const vlfTemplate: ProtocolSchema = {
+      protocol_name: version?.globalProtocol?.name || "Ensayo VLF",
+      version: String(version?.versionNumber || "1"),
       sections: [
         {
           id: crypto.randomUUID(),
@@ -127,8 +146,8 @@ export default function ProtocolBuilder({ versionId }: Props) {
         },
       ],
     };
-    reset(vlfTemplate as ProtocolSchema);
-    toast.success("Plantilla VLF cargada correctamente");
+    reset(vlfTemplate);
+    toast.success("Plantilla VLF cargada en el editor local");
   };
 
   const onSave = (data: ProtocolSchema) => {
@@ -141,39 +160,45 @@ export default function ProtocolBuilder({ versionId }: Props) {
   };
 
   if (isLoading)
-    return <p className="p-10 text-center">Cargando editor de ingeniería...</p>;
+    return (
+      <div className="h-48 flex items-center justify-center text-slate-400 font-bold uppercase text-xs tracking-widest">
+        Sincronizando con el servidor de ingeniería...
+      </div>
+    );
 
   return (
     <div className={styles.builderContainer}>
       <header className={styles.builderHeader}>
-        <div>
+        <div className="text-left">
           <h2 className={styles.protocolName}>
             {version?.globalProtocol?.name}
           </h2>
           <p className={styles.versionBadge}>
-            Versión {version?.versionNumber} - Configuración Técnica
+            Versión {version?.versionNumber} — Estructura de Captura
           </p>
         </div>
 
         <div className="flex gap-3">
-          {/*  BOTÓN DE CARGA RÁPIDA VLF */}
           <Button
             variant="outline"
+            type="button"
             onClick={loadVLFTemplate}
-            className="border-amber-500 text-amber-600 hover:bg-amber-50 gap-2"
+            className="border-amber-500 text-amber-600 hover:bg-amber-50 gap-2 font-black rounded-xl"
           >
-            <Zap size={18} /> Cargar Plantilla VLF
+            <Zap size={18} /> USAR PLANTILLA VLF
           </Button>
 
           <Button
             onClick={handleSubmit(onSave)}
             disabled={updateSchema.isPending}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+            className="gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl px-6"
           >
-            <Save size={18} />
-            {updateSchema.isPending
-              ? "Guardando en EC2..."
-              : "Publicar Cambios"}
+            {updateSchema.isPending ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
+            {updateSchema.isPending ? "GUARDANDO..." : "PUBLICAR PROTOCOLO"}
           </Button>
         </div>
       </header>
@@ -191,22 +216,24 @@ export default function ProtocolBuilder({ versionId }: Props) {
 
         <Button
           variant="outline"
+          type="button"
           onClick={() =>
             appendSection({
               id: crypto.randomUUID(),
-              title: "Nueva Sección",
+              title: "Nueva Sección de Datos",
               fields: [],
             })
           }
-          className="w-full border-dashed py-8 hover:bg-slate-50"
+          className="w-full border-dashed border-2 py-10 rounded-[2rem] hover:bg-slate-50 hover:border-blue-500 hover:text-blue-600 transition-all font-black uppercase text-xs tracking-widest"
         >
-          <Plus className="mr-2" /> Agregar Nueva Sección de Ingeniería
+          <Plus className="mr-2" size={20} /> Crear Nueva Sección
         </Button>
       </div>
     </div>
   );
 }
 
+// COMPONENTE DE SECCIÓN
 interface SectionItemProps {
   sIndex: number;
   control: Control<ProtocolSchema>;
@@ -230,78 +257,78 @@ function SectionItem({
   });
 
   return (
-    <Card className="mb-6 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-slate-50/50 pb-3">
-        <div className="flex-1 mr-4">
+    <Card className="mb-10 border-slate-200 shadow-lg rounded-[2.5rem] overflow-hidden border-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-slate-900 p-6 text-white">
+        <div className="flex-1 flex items-center gap-4">
+          <div className="p-2 bg-blue-600 rounded-xl">
+            <Layers size={20} />
+          </div>
           <Input
             {...register(`sections.${sIndex}.title`)}
-            placeholder="Título de la Sección"
-            className="text-lg font-bold border-none focus-visible:ring-0 bg-transparent px-0 h-auto"
+            placeholder="Nombre de la sección (ej: Mediciones)"
+            className="text-lg font-black border-none focus-visible:ring-0 bg-transparent px-0 h-auto placeholder:text-slate-500 uppercase"
           />
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="text-destructive hover:bg-red-50"
+          className="text-slate-400 hover:text-white hover:bg-red-500/20 rounded-full"
           type="button"
         >
-          <Trash2 size={18} />
+          <Trash2 size={20} />
         </Button>
       </CardHeader>
 
-      <CardContent className="pt-6">
-        <div className="space-y-3">
+      <CardContent className="p-8">
+        <div className="space-y-4">
           {fieldsArray.map((field, fIndex) => (
             <div
               key={field.id}
-              className="flex gap-3 items-end bg-slate-50 p-3 rounded-lg border border-slate-100"
+              className="flex flex-col md:flex-row gap-4 items-end bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 group transition-all hover:border-blue-200"
             >
-              <div className="flex-1">
-                <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">
-                  Etiqueta
+              <div className="flex-1 w-full">
+                <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest">
+                  Etiqueta del Campo
                 </Label>
                 <Input
                   {...register(`sections.${sIndex}.fields.${fIndex}.label`)}
-                  placeholder="Ej: Tensión de Ensayo"
+                  placeholder="Ej: Corriente de Fuga"
+                  className="h-12 rounded-xl font-bold border-slate-200"
                 />
               </div>
 
-              <div className="w-44">
-                <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">
-                  Tipo de Entrada
+              <div className="w-full md:w-48">
+                <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest">
+                  Tipo
                 </Label>
                 <Controller
                   control={control}
                   name={`sections.${sIndex}.fields.${fIndex}.type`}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="bg-white">
+                      <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="text">Texto Libre</SelectItem>
-                        <SelectItem value="number">Valor Numérico</SelectItem>
-                        <SelectItem value="image">
-                          📸 Captura de Foto
-                        </SelectItem>
-                        <SelectItem value="select">
-                          Lista de Selección
-                        </SelectItem>
+                        <SelectItem value="text">Abierto (Texto)</SelectItem>
+                        <SelectItem value="number">Numérico</SelectItem>
+                        <SelectItem value="image">Cámara / Foto</SelectItem>
+                        <SelectItem value="select">Selección</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
               </div>
 
-              <div className="w-24">
-                <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">
+              <div className="w-full md:w-28">
+                <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest">
                   Unidad
                 </Label>
                 <Input
                   {...register(`sections.${sIndex}.fields.${fIndex}.unit`)}
                   placeholder="kV, mA..."
-                  className="bg-white"
+                  className="h-12 rounded-xl bg-white border-slate-200 font-bold"
                 />
               </div>
 
@@ -310,17 +337,16 @@ function SectionItem({
                 size="icon"
                 onClick={() => remove(fIndex)}
                 type="button"
-                className="hover:text-destructive"
+                className="h-12 w-12 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
               >
-                <Trash2 size={16} />
+                <Trash2 size={18} />
               </Button>
             </div>
           ))}
 
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-slate-100">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
               type="button"
               onClick={() =>
                 append({
@@ -331,26 +357,25 @@ function SectionItem({
                   options: [],
                 })
               }
-              className="text-blue-600 hover:bg-blue-50"
+              className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-black text-[10px] uppercase tracking-widest h-10 px-4"
             >
-              <Plus size={14} className="mr-1" /> Añadir Parámetro
+              <Plus size={14} className="mr-2" /> Añadir Parámetro
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
               type="button"
               onClick={() =>
                 append({
                   id: crypto.randomUUID(),
-                  label: "Registro Fotográfico",
+                  label: "Evidencia",
                   type: "image",
                   required: true,
                   options: [],
                 })
               }
-              className="text-emerald-600 hover:bg-emerald-50"
+              className="rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 font-black text-[10px] uppercase tracking-widest h-10 px-4"
             >
-              <ImageIcon size={14} className="mr-1" /> Añadir Foto
+              <ImageIcon size={14} className="mr-2" /> Añadir Foto
             </Button>
           </div>
         </div>

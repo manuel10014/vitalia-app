@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useProtocols, GlobalProtocol } from "@/hooks/useProtocols";
+import { useProtocols } from "@/hooks/useProtocols";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import styles from "./library.module.css";
 import { CreateGlobalProtocolModal } from "@/components/admin/protocols/createGlobalProtocols";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiErrorResponse } from "@/types";
+import { ApiErrorResponse, GlobalProtocol } from "@/types";
 
 export default function LibraryPage() {
   const [search, setSearch] = useState("");

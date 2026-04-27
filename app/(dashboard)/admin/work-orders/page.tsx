@@ -1,11 +1,12 @@
 "use client";
 
-import { useWorkOrders, WorkOrder } from "@/hooks/useWorkOrders";
+import { useWorkOrders } from "@/hooks/useWorkOrders";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
 import styles from "./workorders.module.css";
 import { CreateWorkOrderDialog } from "@/components/admin/workOrders/CreateWorkOrderDialog";
+import { WorkOrder } from "@/types";
 
 export default function WorkOrdersPage() {
   const { workOrders, isLoading } = useWorkOrders();
@@ -41,7 +42,9 @@ export default function WorkOrdersPage() {
           {
             header: "Proyecto",
             render: (row) => (
-              <span className={styles.projectName}>{row.project.name}</span>
+              <span className={styles.projectName}>
+                {row?.project?.name || ""}
+              </span>
             ),
           },
           {
