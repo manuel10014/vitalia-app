@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useProtocols, GlobalProtocol } from "@/hooks/useProtocols";
+import { useProtocols } from "@/hooks/useProtocols";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookPlus, Loader2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import styles from "./createGlobalProtocols.module.css";
+import { GlobalProtocol } from "@/types";
 
 type GlobalServiceForm = Pick<
   GlobalProtocol,

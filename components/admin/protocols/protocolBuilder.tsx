@@ -4,14 +4,34 @@ import { useState, useEffect } from "react";
 import { useProtocols } from "@/hooks/useProtocols";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, Image as ImageIcon, Zap } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Image as ImageIcon,
+  Zap,
+  Loader2,
+} from "lucide-react";
 import styles from "./protocolBuilder.module.css";
 import { toast } from "sonner";
+import { ProtocolSchema } from "@/types";
+
+type FieldType =
+  | "number"
+  | "select"
+  | "textarea"
+  | "image"
+  | "text"
+  | "date"
+  | "file"
+  | "signature"
+  | "check"
+  | "camera";
 
 interface Field {
   id: string;
   label: string;
-  type: "text" | "number" | "select" | "check" | "image";
+  type: FieldType;
   unit?: string;
   required: boolean;
 }
@@ -29,7 +49,7 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
 
   useEffect(() => {
     if (version?.schemaDefinition?.sections) {
-      setSections(version.schemaDefinition.sections);
+      setSections(version.schemaDefinition.sections as Section[]);
     }
   }, [version]);
 
@@ -114,7 +134,7 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
       },
       {
         id: crypto.randomUUID(),
-        title: "Evidencia Fotográfica (2 por medición)",
+        title: "Evidencia Fotográfica",
         fields: [
           {
             id: crypto.randomUUID(),
@@ -132,7 +152,7 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
       },
     ];
     setSections(vlfTemplate);
-    toast.success("Plantilla VLF cargada: 12 parámetros definidos");
+    toast.success("Plantilla VLF cargada");
   };
 
   const addSection = () => {
@@ -144,7 +164,7 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
     setSections([...sections, newSection]);
   };
 
-  const addField = (sectionId: string, type: Field["type"] = "number") => {
+  const addField = (sectionId: string, type: FieldType = "number") => {
     setSections(
       sections.map((s) => {
         if (s.id === sectionId) {
@@ -166,54 +186,70 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
     );
   };
 
-  const saveChanges = () => {
+  // 🟢 SOLUCIÓN TS: Empaquetado de datos para el Back-end
+  const handleSave = () => {
     if (!version?.organizationProtocolId) {
-      toast.error("No se pudo identificar el protocolo");
+      toast.error("Error: No se pudo identificar el protocolo");
       return;
     }
+
+    const fullSchema: ProtocolSchema = {
+      protocol_name: version.globalProtocol?.name || "Protocolo de Ingeniería",
+      version: version.versionNumber.toString(),
+      sections: sections,
+    };
 
     updateSchema.mutate({
       versionId,
       orgProtocolId: version.organizationProtocolId,
-      schema: { sections },
+      schema: fullSchema,
     });
   };
 
   if (isLoading)
-    return <div className={styles.loading}>Cargando Ingeniería...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center font-bold text-slate-400 animate-pulse uppercase text-xs tracking-widest">
+        Sincronizando con Servidor Vitalia...
+      </div>
+    );
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        {/* FILA 1: Título y versión */}
         <div className={styles.titleGroup}>
-          <h2>Diseñador de Servicio Técnico</h2>
+          <h2 className="text-xl font-black text-slate-800">
+            Diseñador de Servicio Técnico
+          </h2>
           <p className={styles.versionText}>
             Configurando: {version?.globalProtocol?.name} (v
             {version?.versionNumber})
           </p>
         </div>
 
-        {/* FILA 2: Botones */}
         <div className={styles.buttonGroup}>
           <Button
             variant="outline"
             onClick={loadVLFTemplate}
-            className="border-amber-500 text-amber-600 hover:bg-amber-50"
+            className="border-amber-500 text-amber-600 hover:bg-amber-50 font-bold"
           >
-            <Zap size={16} className="mr-2" /> Cargar Plantilla
+            <Zap size={16} className="mr-2" /> Cargar Plantilla VLF
           </Button>
 
           <Button
-            onClick={saveChanges}
+            onClick={handleSave}
             disabled={updateSchema.isPending}
-            className={styles.saveBtn}
+            className="bg-slate-900 text-white font-black hover:bg-slate-800"
           >
-            <Save size={16} className="mr-2" />
-            {updateSchema.isPending ? "Guardando..." : "Guardar Configuración"}
+            {updateSchema.isPending ? (
+              <Loader2 className="animate-spin mr-2" size={16} />
+            ) : (
+              <Save size={16} className="mr-2" />
+            )}
+            {updateSchema.isPending ? "Publicando..." : "Publicar Cambios"}
           </Button>
         </div>
       </header>
+
       <div className={styles.editorOnlyArea}>
         <div className={styles.contentWrapper}>
           {sections.map((section, sIdx) => (
@@ -235,15 +271,15 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
                     setSections(sections.filter((s) => s.id !== section.id))
                   }
                 >
-                  <Trash2 size={16} color="#f87171" />
+                  <Trash2 size={16} className="text-red-400" />
                 </Button>
               </div>
 
-              <div className="p-4 space-y-3">
+              <div className="p-6 space-y-4">
                 {section.fields.map((field, fIdx) => (
                   <div key={field.id} className={styles.fieldRow}>
-                    <div className="flex-[2]">
-                      <span className={styles.fieldMeta}>Nombre del Campo</span>
+                    <div className="flex-[2] text-left">
+                      <span className={styles.fieldMeta}>Etiqueta</span>
                       <Input
                         value={field.label}
                         onChange={(e) => {
@@ -251,44 +287,48 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
                           newSections[sIdx].fields[fIdx].label = e.target.value;
                           setSections(newSections);
                         }}
+                        className="font-bold border-slate-200"
                       />
                     </div>
 
-                    <div className="flex-1">
+                    <div className="flex-1 text-left">
                       <span className={styles.fieldMeta}>Tipo</span>
                       <select
-                        className="w-full h-10 text-sm border rounded-md px-2 bg-white"
+                        className="w-full h-10 text-sm border border-slate-200 rounded-md px-2 bg-white font-medium"
                         value={field.type}
                         onChange={(e) => {
                           const newSections = [...sections];
                           newSections[sIdx].fields[fIdx].type = e.target
-                            .value as Field["type"];
+                            .value as FieldType;
                           setSections(newSections);
                         }}
                       >
                         <option value="text">Texto</option>
                         <option value="number">Número</option>
-                        <option value="image">Imagen/Foto</option>
+                        <option value="image">📸 Imagen / Cámara</option>
+                        <option value="date">Fecha</option>
+                        <option value="signature">Firma</option>
                       </select>
                     </div>
 
-                    <div className="w-24">
+                    <div className="w-24 text-left">
                       <span className={styles.fieldMeta}>Unidad</span>
                       <Input
                         value={field.unit || ""}
-                        placeholder="Ej: kV"
+                        placeholder="kV"
                         onChange={(e) => {
                           const newSections = [...sections];
                           newSections[sIdx].fields[fIdx].unit = e.target.value;
                           setSections(newSections);
                         }}
+                        className="text-center font-black text-blue-600 border-slate-200"
                       />
                     </div>
 
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="mb-0.5"
+                      className="mt-6 hover:bg-red-50 hover:text-red-500"
                       onClick={() => {
                         const newSections = [...sections];
                         newSections[sIdx].fields = newSections[
@@ -297,25 +337,27 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
                         setSections(newSections);
                       }}
                     >
-                      <Trash2 size={16} color="#cbd5e1" />
+                      <Trash2 size={16} />
                     </Button>
                   </div>
                 ))}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-4 border-t border-slate-50">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    className="text-blue-600 hover:bg-blue-50 font-black uppercase text-[10px] tracking-widest"
                     onClick={() => addField(section.id, "number")}
                   >
-                    <Plus size={14} className="mr-1" /> Dato
+                    <Plus size={14} className="mr-2" /> Añadir Dato
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    className="text-emerald-600 hover:bg-emerald-50 font-black uppercase text-[10px] tracking-widest"
                     onClick={() => addField(section.id, "image")}
                   >
-                    <ImageIcon size={14} className="mr-1" /> Foto
+                    <ImageIcon size={14} className="mr-2" /> Añadir Foto
                   </Button>
                 </div>
               </div>
@@ -324,10 +366,11 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
 
           <Button
             onClick={addSection}
-            className={styles.addSectionBtn}
+            className="w-full py-12 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition-all font-black uppercase tracking-widest text-xs"
             variant="outline"
           >
-            <Plus size={20} className="mr-2" /> Añadir Sección Técnica
+            <Plus size={20} className="mr-3" /> Crear Nueva Sección de
+            Ingeniería
           </Button>
         </div>
       </div>
