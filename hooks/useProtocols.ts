@@ -2,73 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiErrorResponse, ApiPaginationMeta } from "@/types";
+import {
+  AdoptResponse,
+  ApiErrorResponse,
+  ApiPaginationMeta,
+  GlobalProtocol,
+  OrganizationProtocol,
+  ProtocolSchema,
+  ProtocolVersion,
+} from "@/types";
 
 // --- Interfaces de Dominio ---
-
-export interface ProtocolField {
-  id: string;
-  label: string;
-  type: "text" | "number" | "select" | "check" | "image";
-  unit?: string;
-  required: boolean;
-  options?: string[];
-}
-
-export interface ProtocolSection {
-  id: string;
-  title: string;
-  fields: ProtocolField[];
-}
-
-export interface ProtocolSchema {
-  sections: ProtocolSection[];
-}
-
-export interface ProtocolVersion {
-  id: string;
-  organizationId: string;
-  organizationProtocolId: string;
-  versionNumber: number;
-  schemaDefinition: ProtocolSchema;
-  formulaDefinition?: Record<string, string>;
-  requirements?: Record<string, unknown>;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  globalProtocol?: { name: string };
-}
-
-export interface OrganizationProtocol {
-  id: string;
-  organizationId: string;
-  globalProtocolId: string;
-  isActive: boolean;
-  globalProtocol: {
-    name: string;
-    category: string;
-    code: string;
-  };
-  versions: ProtocolVersion[];
-  createdAt: string;
-}
-
-export interface GlobalProtocol {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  description: string;
-  isActive: boolean;
-}
-
-// Interfaz para la respuesta de adopción (lo que espera tu LibraryPage)
-export interface AdoptResponse {
-  id: string;
-  organizationId: string;
-  globalProtocolId: string;
-  activeVersionId: string;
-}
 
 export function useProtocols() {
   const queryClient = useQueryClient();

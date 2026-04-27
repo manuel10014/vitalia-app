@@ -37,8 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Opcional: Validar el token con el backend para estar 100% seguros
           // await api.get("/auth/verify");
         }
-      } catch (error) {
-        console.error("Error hidratando sesión:", error);
+      } catch {
         clearSession();
       } finally {
         // ¡ESTO ES LO QUE FALTABA!
@@ -68,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       router.push("/");
     } catch (error) {
-      console.error("Login failed:", error);
       throw error;
     } finally {
       setIsLoading(false);

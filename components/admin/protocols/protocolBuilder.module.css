@@ -2,26 +2,26 @@
   display: flex;
   flex-direction: column;
   height: 100%; /* Usa el alto total que le asigne el Dialog */
-  max-height: 70vh; /* 🟢 IMPORTANTE: Limita el alto para forzar el scroll interno */
+  max-height: 70vh; /*  IMPORTANTE: Limita el alto para forzar el scroll interno */
   overflow: hidden; /* El contenedor base NO scrollea */
 }
 
 .header {
   flex-shrink: 0;
-  padding: 1rem 0; /* 🟢 Quita el padding lateral, usa el del modal */
+  padding: 1rem 0; /*  Quita el padding lateral, usa el del modal */
   border-bottom: 1px solid #f1f5f9;
-  background: transparent; /* 🟢 Quita el fondo blanco duplicado */
+  background: transparent; /*  Quita el fondo blanco duplicado */
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
 .titleGroup {
-  width: 100%; /* 🟢 Ocupa todo el ancho */
+  width: 100%; /*  Ocupa todo el ancho */
 }
 
 .buttonGroup {
-  display: flex; /* 🟢 Los botones van uno al lado del otro */
+  display: flex; /*  Los botones van uno al lado del otro */
   gap: 0.75rem;
   justify-content: flex-start; /* O flex-end si los prefieres a la derecha */
 }
@@ -42,7 +42,7 @@
 /* Área centrada del editor sin el sidebar de preview */
 .editorOnlyArea {
   flex: 1;
-  overflow-y: auto; /* 🟢 AQUÍ activamos el scroll */
+  overflow-y: auto; /*  AQUÍ activamos el scroll */
   padding: 1rem 0.5rem;
 
   /* Estilización del scrollbar para que se vea fino (opcional) */

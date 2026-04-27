@@ -17,7 +17,6 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-//  Cambiamos al nuevo Launcher
 import { RunTestLauncher } from "@/components/admin/runTests/RunTestLauncher";
 import styles from "./test-runs.module.css";
 
@@ -70,10 +69,9 @@ export default function TestRunsPage() {
         <div>
           <h1 className={styles.title}>Ejecuciones Técnicas</h1>
           <p className={styles.subtitle}>
-            Monitoreo en tiempo real de pruebas y protocolos de ingeniería.
+            Monitoreo en tiempo real de pruebas y servicios de ingeniería.
           </p>
         </div>
-        {/*  Launcher que inicia el flujo de 3 pasos */}
         <RunTestLauncher />
       </header>
 
@@ -86,11 +84,12 @@ export default function TestRunsPage() {
               header: "Activo / Equipo",
               render: (tr) => (
                 <div className={styles.assetInfo}>
-                  <span className={styles.assetName}>
+                  <span className="font-bold text-slate-800">
                     {tr.asset?.name || "Sin Nombre"}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    ID: {tr.asset?.tagId}
+                  {/* El TagID se mantiene como referencia pequeña abajo */}
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    TAG: {tr.asset?.tagId || "N/A"}
                   </span>
                 </div>
               ),
@@ -103,7 +102,6 @@ export default function TestRunsPage() {
                     variant="outline"
                     className="cursor-pointer hover:bg-blue-50 border-blue-200 text-blue-700 gap-1 font-mono py-1"
                   >
-                    {/*  Usamos el code de la OT si está disponible */}
                     {tr.workOrder?.code || `#${tr.workOrderId.split("-")[0]}`}
                     <ExternalLink size={10} />
                   </Badge>
@@ -111,14 +109,17 @@ export default function TestRunsPage() {
               ),
             },
             {
-              header: "Protocolo Aplicado",
+              header: "Servicio Aplicado", //  Cambiado de "Protocolo" a "Servicio"
               render: (tr) => (
-                <span className="text-sm font-medium text-slate-600">
-                  {tr.protocolVersion?.organizationProtocol.globalProtocol.name}
-                  <span className="ml-1 text-[10px] text-slate-400 italic">
-                    v{tr.protocolVersion?.versionNumber}
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-700">
+                    {tr.protocolVersion?.organizationProtocol?.globalProtocol
+                      ?.name || "Servicio no definido"}
                   </span>
-                </span>
+                  <span className="text-[10px] text-slate-400 italic">
+                    Versión técnica v{tr.protocolVersion?.versionNumber || "?"}
+                  </span>
+                </div>
               ),
             },
             {
@@ -154,20 +155,42 @@ export default function TestRunsPage() {
                 </div>
               ),
             },
+            // ... resto de las columnas
             {
               header: "Acciones",
-              render: (tr) => (
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <Link href={`/admin/test-runs/${tr.id}`}>Ver Datos</Link>
-                  </Button>
-                </div>
-              ),
+              render: (tr) => {
+                const isInProgress = tr.status === "IN_PROGRESS";
+
+                return (
+                  <div className="flex gap-2">
+                    {isInProgress ? (
+                      // Botón para continuar si está en campo
+                      <Button
+                        variant="default"
+                        size="sm"
+                        asChild
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] h-8 shadow-sm"
+                      >
+                        <Link href={`/admin/test-runs/execute/${tr.id}`}>
+                          CONTINUAR PRUEBA
+                        </Link>
+                      </Button>
+                    ) : (
+                      // Botón para ver resultados si ya terminó
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="text-slate-600 border-slate-200 hover:bg-slate-50 font-black text-[10px] h-8"
+                      >
+                        <Link href={`/admin/test-runs/${tr.id}`}>
+                          VER DATOS
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                );
+              },
             },
           ]}
         />

@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import {
-  useForm,
-  Controller,
-  FieldErrors,
-  useWatch,
-  SubmitHandler,
-} from "react-hook-form";
+import { useForm, Controller, useWatch, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -160,8 +154,7 @@ export function ClientFormSheet({
     mutation.mutate(data);
   };
 
-  const onInvalid = (err: FieldErrors<ClientFormData>) => {
-    console.log("Validation Errors:", err);
+  const onInvalid = () => {
     toast.error("Por favor, revisa los campos obligatorios en rojo.");
   };
 

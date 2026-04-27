@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useWatch, FieldErrors } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useEquipment } from "@/hooks/useEquipment";
 import { MeasurementEquipment } from "@/types";
 import {
@@ -87,9 +87,7 @@ export function CreateEquipmentModal({
     setOpen(newOpen);
   };
 
-  // Manejador de errores para que ESLint detecte su uso (FieldErrors)
-  const onInvalid = (err: FieldErrors<EquipmentFormData>) => {
-    console.error("Errores de validación:", err);
+  const onInvalid = () => {
     toast.error("Por favor, completa los campos obligatorios");
   };
 

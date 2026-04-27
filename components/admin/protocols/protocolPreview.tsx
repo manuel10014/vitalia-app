@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Smartphone, Info, Camera, ChevronDown } from "lucide-react";
 import styles from "./protocolPreview.module.css";
-import { ProtocolSection, ProtocolField } from "@/hooks/useProtocols";
+import { ProtocolField, ProtocolSection } from "@/types";
 
 interface PreviewProps {
   sections: ProtocolSection[];

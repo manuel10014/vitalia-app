@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react"; //  Importamos useState
-import { OrganizationProtocol, useProtocols } from "@/hooks/useProtocols";
+import { useProtocols } from "@/hooks/useProtocols";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Settings2, Plus, Zap } from "lucide-react";
@@ -13,6 +13,7 @@ import { EditProtocolModal } from "@/components/admin/protocols/editProtocolModa
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { OrganizationProtocol } from "@/types";
 
 export default function ProtocolsPage() {
   const queryClient = useQueryClient();

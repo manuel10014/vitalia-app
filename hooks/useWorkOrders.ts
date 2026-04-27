@@ -1,19 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-
-export interface WorkOrder {
-  id: string;
-  status:
-    | "DRAFT"
-    | "ASSIGNED"
-    | "IN_PROGRESS"
-    | "REVIEW_PENDING"
-    | "APPROVED"
-    | "REJECTED";
-  scheduledDate: string;
-  project: { name: string };
-  technician: { fullName: string } | null;
-}
+import { WorkOrder } from "@/types";
 
 export function useWorkOrders() {
   const { data, isLoading } = useQuery({

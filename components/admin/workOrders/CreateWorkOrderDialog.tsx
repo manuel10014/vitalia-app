@@ -35,11 +35,10 @@ import {
   X,
   FileText,
 } from "lucide-react";
-import { ApiErrorResponse, Project, User } from "@/types";
+import { ApiErrorResponse, OrganizationProtocol, Project, User } from "@/types";
 import { toast } from "sonner";
 import styles from "./CreateWorkOrder.module.css";
 import { AxiosError } from "axios";
-import { OrganizationProtocol } from "@/hooks/useProtocols";
 
 export function CreateWorkOrderDialog() {
   const [open, setOpen] = useState(false);
