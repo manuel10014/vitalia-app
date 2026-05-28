@@ -2,7 +2,7 @@ import axios from "axios";
 import { getToken, getUser } from "./auth";
 
 const api = axios.create({
-  baseURL: "https://vitalia.ddns.net/api/v1",
+  baseURL: "https://api-vitalia.click/api/v1",
 });
 
 api.interceptors.request.use(

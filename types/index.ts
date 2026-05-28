@@ -326,7 +326,7 @@ export interface TestRun {
   status: TestStatus;
   startedAt: string | null;
   finishedAt: string | null;
-
+  createdBy?: User;
   // Relación con los datos capturados (TestRunData)
   data?: {
     capturedData: Record<string, Record<string, CapturedValue>>;
@@ -349,7 +349,7 @@ export interface TestRun {
       reviewedAt: string;
       comments?: string;
     };
-    [key: string]: unknown; // Permite otros campos de JsonValue
+    [key: string]: unknown;
   } | null;
 
   values: Record<string, unknown>;
