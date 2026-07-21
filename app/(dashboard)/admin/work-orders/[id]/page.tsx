@@ -8,6 +8,19 @@ import { ChevronLeft, Loader2, User, Box, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ORDER_STATUS_LABELS, translateStatus } from "@/lib/statusLabels";
 
+interface AssetSummary {
+  id: string;
+  name: string;
+  tagId?: string;
+}
+
+interface EquipmentSummary {
+  id: string;
+  name: string;
+  internalCode?: string;
+  serialNumber?: string;
+}
+
 export default function WorkOrderDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -33,26 +46,27 @@ export default function WorkOrderDetailPage() {
   // varios ensayos, sobre distintos activos y con distinto instrumental).
   // Acá deduplicamos por id para no repetir el mismo activo/equipo si se
   // usó en más de un ensayo.
-  const testRuns = wo?.testRuns || [];
-  const uniqueAssets = Array.from(
-    new Map(
+  const testRuns: {
+    asset?: AssetSummary;
+    equipments?: { equipment?: EquipmentSummary }[];
+  }[] = wo?.testRuns || [];
+
+  const uniqueAssets: AssetSummary[] = Array.from(
+    new Map<string, AssetSummary>(
       testRuns
-        .filter((tr: { asset?: { id: string } }) => tr.asset?.id)
-        .map((tr: { asset: { id: string } }) => [tr.asset.id, tr.asset]),
+        .filter((tr): tr is { asset: AssetSummary } => !!tr.asset?.id)
+        .map((tr) => [tr.asset.id, tr.asset]),
     ).values(),
   );
-  const uniqueEquipment = Array.from(
-    new Map(
+
+  const uniqueEquipment: EquipmentSummary[] = Array.from(
+    new Map<string, EquipmentSummary>(
       testRuns
-        .flatMap(
-          (tr: { equipments?: { equipment?: { id: string } }[] }) =>
-            tr.equipments || [],
+        .flatMap((tr) => tr.equipments || [])
+        .filter(
+          (te): te is { equipment: EquipmentSummary } => !!te.equipment?.id,
         )
-        .filter((te: { equipment?: { id: string } }) => te.equipment?.id)
-        .map((te: { equipment: { id: string } }) => [
-          te.equipment.id,
-          te.equipment,
-        ]),
+        .map((te) => [te.equipment.id, te.equipment]),
     ).values(),
   );
 
@@ -138,7 +152,7 @@ export default function WorkOrderDetailPage() {
                 Aún no hay ensayos registrados en esta OT.
               </p>
             ) : (
-              uniqueAssets.map((asset: { id: string; name: string; tagId?: string }) => (
+              uniqueAssets.map((asset) => (
                 <div
                   key={asset.id}
                   className="flex items-center gap-3 border-b last:border-0 pb-3 last:pb-0"
@@ -174,12 +188,7 @@ export default function WorkOrderDetailPage() {
               </p>
             ) : (
               uniqueEquipment.map(
-                (eq: {
-                  id: string;
-                  name: string;
-                  internalCode?: string;
-                  serialNumber?: string;
-                }) => (
+                (eq) => (
                   <div
                     key={eq.id}
                     className="flex items-center gap-3 border-b last:border-0 pb-3 last:pb-0"
