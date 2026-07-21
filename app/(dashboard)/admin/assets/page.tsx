@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Plus, Package, QrCode, Settings2 } from "lucide-react";
 import { AssetFormSheet } from "@/components/admin/Assets/AssetFormSheet";
+import { ASSET_STATUS_LABELS, translateStatus } from "@/lib/statusLabels";
 
 export default function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,14 +75,14 @@ export default function AssetsPage() {
 
         <div className={styles.actionsBar}>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px] bg-white">
+            <SelectTrigger className="w-[220px] bg-white">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Todos los estados</SelectItem>
               <SelectItem value="OPERATIONAL">Operativo</SelectItem>
               <SelectItem value="MAINTENANCE">En Mantenimiento</SelectItem>
-              <SelectItem value="DOWN">Fuera de Servicio</SelectItem>
+              <SelectItem value="DECOMMISSIONED">Dado de Baja</SelectItem>
             </SelectContent>
           </Select>
 
@@ -129,12 +130,9 @@ export default function AssetsPage() {
               ),
             },
             {
-              header: "Ubicación / Proyecto",
+              header: "Ubicación",
               render: (a) => (
                 <div className={styles.locationCell}>
-                  <span className={styles.projectName}>
-                    {a.project?.name || "Proyecto no asignado"}
-                  </span>
                   <span className={styles.locationSub}>
                     <span className={styles.locationDot} />
                     {a.locationDescription || "Sin ubicación"}
@@ -185,7 +183,7 @@ export default function AssetsPage() {
                       variant="outline"
                       className={`${styles.badgeBase} ${statusClass}`}
                     >
-                      {a.status}
+                      {translateStatus(ASSET_STATUS_LABELS, a.status)}
                     </Badge>
                     <span className={styles.updateDate}>
                       Actualizado: {new Date(a.updatedAt).toLocaleDateString()}

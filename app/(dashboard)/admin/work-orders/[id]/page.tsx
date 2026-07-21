@@ -4,8 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Loader2, User } from "lucide-react";
+import { ChevronLeft, Loader2, User, Box, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ORDER_STATUS_LABELS, translateStatus } from "@/lib/statusLabels";
 
 export default function WorkOrderDetailPage() {
   const { id } = useParams();
@@ -26,6 +27,34 @@ export default function WorkOrderDetailPage() {
         <Loader2 className="animate-spin text-blue-600" size={40} />
       </div>
     );
+
+  // El activo y el equipo de medición no cuelgan de la OT directamente —
+  // se usan por cada TestRun ejecutado bajo ella (una OT puede tener
+  // varios ensayos, sobre distintos activos y con distinto instrumental).
+  // Acá deduplicamos por id para no repetir el mismo activo/equipo si se
+  // usó en más de un ensayo.
+  const testRuns = wo?.testRuns || [];
+  const uniqueAssets = Array.from(
+    new Map(
+      testRuns
+        .filter((tr: { asset?: { id: string } }) => tr.asset?.id)
+        .map((tr: { asset: { id: string } }) => [tr.asset.id, tr.asset]),
+    ).values(),
+  );
+  const uniqueEquipment = Array.from(
+    new Map(
+      testRuns
+        .flatMap(
+          (tr: { equipments?: { equipment?: { id: string } }[] }) =>
+            tr.equipments || [],
+        )
+        .filter((te: { equipment?: { id: string } }) => te.equipment?.id)
+        .map((te: { equipment: { id: string } }) => [
+          te.equipment.id,
+          te.equipment,
+        ]),
+    ).values(),
+  );
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
@@ -52,9 +81,15 @@ export default function WorkOrderDetailPage() {
               <span className="font-bold">{wo?.project?.name}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
+              <span className="text-slate-500">Cliente:</span>
+              <span className="font-bold">
+                {wo?.project?.client?.businessName || "Sin cliente"}
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
               <span className="text-slate-500">Estado:</span>
               <span className="badge bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase">
-                {wo?.status}
+                {translateStatus(ORDER_STATUS_LABELS, wo?.status)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -85,6 +120,86 @@ export default function WorkOrderDetailPage() {
                 {wo?.technician?.fullName}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Activos inspeccionados (vía los test runs de la OT) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-bold text-slate-400 uppercase">
+              Activos Inspeccionados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {uniqueAssets.length === 0 ? (
+              <p className="text-sm text-slate-400 italic">
+                Aún no hay ensayos registrados en esta OT.
+              </p>
+            ) : (
+              uniqueAssets.map((asset: { id: string; name: string; tagId?: string }) => (
+                <div
+                  key={asset.id}
+                  className="flex items-center gap-3 border-b last:border-0 pb-3 last:pb-0"
+                >
+                  <div className="bg-slate-100 p-2 rounded-full">
+                    <Box size={16} className="text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-700 text-sm">
+                      {asset.name}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      TAG: {asset.tagId || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Equipo de medición usado (vía los test runs de la OT) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-bold text-slate-400 uppercase">
+              Equipo de Medición
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {uniqueEquipment.length === 0 ? (
+              <p className="text-sm text-slate-400 italic">
+                Aún no hay instrumental registrado en esta OT.
+              </p>
+            ) : (
+              uniqueEquipment.map(
+                (eq: {
+                  id: string;
+                  name: string;
+                  internalCode?: string;
+                  serialNumber?: string;
+                }) => (
+                  <div
+                    key={eq.id}
+                    className="flex items-center gap-3 border-b last:border-0 pb-3 last:pb-0"
+                  >
+                    <div className="bg-slate-100 p-2 rounded-full">
+                      <Zap size={16} className="text-slate-500" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-700 text-sm">
+                        {eq.name}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        {eq.internalCode || "SIN CÓDIGO"} • SN:{" "}
+                        {eq.serialNumber || "S/N"}
+                      </p>
+                    </div>
+                  </div>
+                ),
+              )
+            )}
           </CardContent>
         </Card>
       </div>

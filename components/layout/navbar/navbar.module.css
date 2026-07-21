@@ -9,7 +9,37 @@
   height: 3.5rem;
   align-items: center;
   justify-content: flex-end;
-  padding: 0 1.5rem;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: auto;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  background-color: #f3f4f6;
+}
+
+@media (min-width: 768px) {
+  .menuButton {
+    display: none;
+  }
 }
 
 .userButton {

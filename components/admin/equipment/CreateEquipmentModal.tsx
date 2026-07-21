@@ -34,13 +34,24 @@ type EquipmentFormData = {
 interface CreateEquipmentModalProps {
   equipmentToEdit?: MeasurementEquipment | null;
   onClose?: () => void;
+  // Controlados: usados desde la tabla para abrir el modal en modo edición
+  // (el botón "Editar" no tiene un DialogTrigger propio, así que el open
+  // del Dialog lo maneja la página). Si no se pasan, el componente sigue
+  // funcionando en modo no-controlado (caso "Nuevo Equipo" con su propio
+  // DialogTrigger).
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CreateEquipmentModal({
   equipmentToEdit,
   onClose,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: CreateEquipmentModalProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
   const { createEquipment, updateEquipment } = useEquipment();
   const isEditing = !!equipmentToEdit;
 
@@ -84,7 +95,11 @@ export function CreateEquipmentModal({
       reset();
       if (onClose) onClose();
     }
-    setOpen(newOpen);
+    if (isControlled) {
+      controlledOnOpenChange?.(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
   };
 
   const onInvalid = () => {
@@ -127,7 +142,7 @@ export function CreateEquipmentModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {!isEditing && (
+      {!isEditing && !isControlled && (
         <DialogTrigger asChild>
           <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
             <Plus size={18} /> Nuevo Equipo de Medición

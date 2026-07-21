@@ -117,11 +117,20 @@ export function UserFormSheet({
   useEffect(() => {
     if (open) {
       if (userToEdit) {
+        // userToEdit.roles trae la KEY del rol (ej. "ADMIN"), no su id — lo
+        // devuelve así UserEntity en el backend. El <Select> de abajo usa
+        // role.id como value, así que hay que resolver la key a su id
+        // buscando en el catálogo de roles de la organización. Si "roles"
+        // todavía no cargó cuando se abre el formulario, este efecto se
+        // vuelve a correr solo cuando llegue (está en las dependencias).
+        const matchedRole = roles?.find(
+          (r) => r.key === userToEdit.roles?.[0],
+        );
         reset({
           fullName: userToEdit.fullName,
           email: userToEdit.email,
           password: "",
-          roleId: userToEdit.roles?.[0] || "",
+          roleId: matchedRole?.id || "",
           isActive: userToEdit.isActive,
           professionalLicense: userToEdit.professionalLicense || "",
         });
@@ -136,7 +145,7 @@ export function UserFormSheet({
         });
       }
     }
-  }, [userToEdit, open, reset]);
+  }, [userToEdit, open, reset, roles]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -162,7 +162,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 2.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
   background-color: white;
   border-bottom: 1px solid #e2e8f0;
   position: sticky;
@@ -320,4 +322,110 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+}
+
+/* DIÁLOGO DE FIRMA Y ENVÍO */
+.submitDialogContent {
+  max-width: 450px;
+  border-radius: 2.5rem;
+  border: none;
+  padding: 2rem;
+}
+
+.submitDialogHeader {
+  text-align: left;
+}
+
+.submitDialogTitle {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+}
+
+.submitDialogDescription {
+  font-weight: 500;
+  color: #64748b;
+  font-style: italic;
+}
+
+.submitDialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.signaturePadContainer {
+  width: 100%;
+  height: 160px;
+  background-color: #f8fafc;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.signatureCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+.signatureLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #475569;
+}
+
+.signatureLabelText {
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.clearSignatureButton {
+  font-size: 0.625rem !important;
+  font-weight: 900 !important;
+  color: #94a3b8 !important;
+}
+
+.inlineIcon {
+  display: inline;
+  margin-right: 0.25rem;
+}
+
+.confirmSubmitButton {
+  height: 3.5rem !important;
+  background-color: #16a34a !important;
+  color: white !important;
+  font-weight: 900 !important;
+  border-radius: 1rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.confirmSubmitButton:hover {
+  background-color: #15803d !important;
+}
+
+.certifyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background-color: #f8fafc;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.certifyLabel {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #334155;
+  text-align: left;
 }

@@ -1,0 +1,62 @@
+/**
+ * Vitalia — Design Tokens (Color)
+ * -------------------------------------------------------------------------
+ * Paleta sobria azul / gris / negro, extraída de los colores que YA se usan
+ * de forma dispersa en el código (RunTestExecution, reports, sidebar, etc.)
+ * y formalizada aquí para que no siga siendo implícita. Los valores
+ * coinciden con la paleta por defecto de Tailwind, así que las clases de
+ * utilidad (bg-blue-600, text-slate-900, ...) ya usan estos mismos hex.
+ *
+ * Estas variables NO reemplazan las de app/globals.css (que son el theme de
+ * shadcn/ui, en escala de grises OKLCH sin usar). Este archivo es la
+ * referencia de marca; conectarlo al theme de shadcn es un paso aparte y
+ * opcional, no incluido aquí para no arriesgar romper componentes ui/*
+ * existentes.
+ */
+
+:root {
+  /* -- Azul (primario / marca) ------------------------------------------ */
+  --vitalia-blue-50: #eff6ff;
+  --vitalia-blue-100: #dbeafe;
+  --vitalia-blue-400: #60a5fa;
+  --vitalia-blue-500: #3b82f6;
+  --vitalia-blue-600: #2563eb; /* primario: botones, estados activos, links */
+  --vitalia-blue-700: #1d4ed8; /* hover / pressed */
+  --vitalia-blue-900: #1e3a8a;
+
+  /* -- Gris (estructura, texto secundario) ------------------------------- */
+  --vitalia-slate-50: #f8fafc; /* fondo de página / secciones */
+  --vitalia-slate-100: #f1f5f9; /* fills sutiles, hover */
+  --vitalia-slate-200: #e2e8f0; /* bordes, separadores */
+  --vitalia-slate-400: #94a3b8; /* texto deshabilitado / placeholder */
+  --vitalia-slate-500: #64748b; /* texto secundario, labels */
+  --vitalia-slate-700: #334155; /* texto de cuerpo sobre fondo claro */
+  --vitalia-slate-900: #0f172a; /* texto de alto énfasis, headers oscuros */
+
+  /* -- Negro / blanco puro (uso mínimo) ----------------------------------- */
+  --vitalia-black: #000000;
+  --vitalia-white: #ffffff;
+
+  /* -- Semánticos (estado de ensayos, no decorativos) ---------------------- */
+  --vitalia-success-50: #ecfdf5;
+  --vitalia-success-500: #10b981; /* aprobado / passed */
+  --vitalia-success-600: #059669;
+
+  --vitalia-danger-50: #fef2f2;
+  --vitalia-danger-200: #fecaca;
+  --vitalia-danger-600: #dc2626; /* rechazado / eliminar */
+
+  --vitalia-warning-50: #fffbeb;
+  --vitalia-warning-500: #f59e0b; /* pendiente / alerta */
+
+  /* -- Alias semánticos de uso general ------------------------------------- */
+  --vitalia-color-primary: var(--vitalia-blue-600);
+  --vitalia-color-primary-hover: var(--vitalia-blue-700);
+  --vitalia-color-bg-page: var(--vitalia-slate-50);
+  --vitalia-color-bg-surface: var(--vitalia-white);
+  --vitalia-color-border: var(--vitalia-slate-200);
+  --vitalia-color-text-heading: var(--vitalia-slate-900);
+  --vitalia-color-text-body: var(--vitalia-slate-700);
+  --vitalia-color-text-muted: var(--vitalia-slate-500);
+  --vitalia-color-text-disabled: var(--vitalia-slate-400);
+}

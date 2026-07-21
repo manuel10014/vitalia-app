@@ -4,6 +4,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import styles from "./navbar.module.css";
+import { Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +25,25 @@ function getInitials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function Navbar() {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
 
   return (
     <nav className={styles.navbar}>
       <div className={styles.container}>
+        <button
+          type="button"
+          className={styles.menuButton}
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+        >
+          <Menu size={22} />
+        </button>
+
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

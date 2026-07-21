@@ -17,6 +17,7 @@ import {
   Clock,
   RotateCcw,
   Layers,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,9 +33,11 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { TestRun, ProtocolSection, ApiErrorResponse } from "@/types";
+import { TEST_STATUS_LABELS, translateStatus } from "@/lib/statusLabels";
 import styles from "./TestRunDetail.module.css";
 import { AxiosError } from "axios";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function TestRunDetailPage() {
   const params = useParams();
@@ -77,6 +80,40 @@ export default function TestRunDetailPage() {
     },
   });
 
+  // Respaldo manual: normalmente el backend genera el ReportSnapshot solo al
+  // aprobar (dentro de PATCH /test-runs/:id/review). Este mutation solo
+  // debería usarse para ensayos aprobados ANTES de ese cambio, que quedaron
+  // sin snapshot asociado.
+  const generateReportMutation = useMutation({
+    mutationFn: async () => {
+      const protocolName =
+        testRun?.protocolVersion?.organizationProtocol?.globalProtocol?.name ||
+        "Reporte Técnico";
+      const capturedData = testRun?.data?.capturedData || {};
+      return await api.post(`/reports/test-runs/${id}`, {
+        reportName: `${protocolName}${
+          testRun?.workOrder?.code ? ` - OT ${testRun.workOrder.code}` : ""
+        }`,
+        snapshotData: {
+          asset: testRun?.asset,
+          workOrder: testRun?.workOrder,
+          protocolVersion: testRun?.protocolVersion,
+          capturedData,
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-run", id] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+      toast.success("Reporte generado.");
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      toast.error(
+        error.response?.data?.message || "Error al generar el reporte.",
+      );
+    },
+  });
+
   if (isLoading || !testRun) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50">
@@ -91,6 +128,12 @@ export default function TestRunDetailPage() {
     []) as ProtocolSection[];
   const linkedEquipments = testRun.equipments || [];
   const reviewInfo = testRun.metadata?.review;
+  // La firma real del supervisor vive en el ReportSnapshot que el backend
+  // genera automáticamente al aprobar (ya no en metadata.review.signature).
+  const latestSnapshot = testRun.reportSnapshots?.length
+    ? testRun.reportSnapshots[testRun.reportSnapshots.length - 1]
+    : undefined;
+  const supervisorSignature = latestSnapshot?.signatures?.[0];
 
   // Extraemos configuración de red de los metadatos
   const numConductores = (testRun.metadata?.numConductores as number) || 1;
@@ -178,8 +221,38 @@ export default function TestRunDetailPage() {
               </DialogContent>
             </Dialog>
           )}
+          {testRun.status === "APPROVED" &&
+            (testRun.reportSnapshots?.length ? (
+              // El backend ya genera el ReportSnapshot (con hash real y la
+              // firma del supervisor) automáticamente al aprobar, dentro de
+              // PATCH /test-runs/:id/review. Acá solo enlazamos al archivo
+              // de certificados en vez de volver a generar uno duplicado.
+              <Button
+                asChild
+                className="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl gap-2 text-[11px] uppercase"
+              >
+                <Link href="/admin/reports">
+                  <FileText size={16} className="mr-2" /> Reporte Generado
+                </Link>
+              </Button>
+            ) : (
+              // Caso excepcional: ensayo aprobado sin snapshot asociado
+              // (p. ej. aprobado antes de que esto se generara automático).
+              <Button
+                onClick={() => generateReportMutation.mutate()}
+                disabled={generateReportMutation.isPending}
+                className="h-11 px-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl gap-2 text-[11px] uppercase"
+              >
+                {generateReportMutation.isPending ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <FileText size={16} />
+                )}
+                Generar Reporte
+              </Button>
+            ))}
           <Badge className="bg-slate-900 text-white border-none font-black px-4 py-2 text-[10px] uppercase rounded-full">
-            {testRun.status}
+            {translateStatus(TEST_STATUS_LABELS, testRun.status)}
           </Badge>
         </div>
       </header>
@@ -201,12 +274,22 @@ export default function TestRunDetailPage() {
                     <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-3">
                       {testRun.asset?.name}
                     </h2>
-                    <Badge
-                      variant="outline"
-                      className="border-slate-200 text-slate-500 font-bold"
-                    >
-                      OT: {testRun.workOrder?.code}
-                    </Badge>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant="outline"
+                        className="border-slate-200 text-slate-500 font-bold"
+                      >
+                        OT: {testRun.workOrder?.code}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="border-slate-200 text-slate-500 font-bold"
+                      >
+                        Cliente:{" "}
+                        {testRun.workOrder?.project?.client?.businessName ||
+                          "Sin cliente"}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 min-w-[240px] text-left border-l border-slate-100 pl-6 text-slate-600">
@@ -435,25 +518,40 @@ export default function TestRunDetailPage() {
             </div>
             <div className={styles.signatureGrid}>
               <div className={styles.signatureCard}>
-                <div className="h-32 w-full border-b border-slate-100 flex items-center justify-center text-slate-200 font-black uppercase text-[10px]">
-                  Firma Digitalizada Técnico
+                <div className="relative h-32 w-full border-b border-slate-100 flex items-center justify-center overflow-hidden">
+                  {testRun.technicianSignatureImageUrl ? (
+                    <Image
+                      src={testRun.technicianSignatureImageUrl}
+                      alt="Firma Técnico"
+                      fill
+                      className="object-contain mix-blend-multiply p-4"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="italic text-slate-200 text-xs font-black uppercase">
+                      Pendiente de Envío
+                    </span>
+                  )}
                 </div>
                 <div className="p-4 text-center">
                   <p className="text-xs font-black text-slate-800 uppercase leading-none mb-2">
                     Ingeniero Ejecutor
                   </p>
-                  <div className={styles.timestamp}>
-                    <Clock size={12} />{" "}
-                    {new Date(testRun.createdAt).toLocaleString()}
-                  </div>
+                  {testRun.technicianSignedAt && (
+                    <div className={styles.timestamp}>
+                      <Clock size={12} />{" "}
+                      {new Date(testRun.technicianSignedAt).toLocaleString()}
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className={styles.signatureCard}>
                 <div className="relative h-32 w-full border-b border-slate-100 flex items-center justify-center overflow-hidden">
-                  {testRun.status === "APPROVED" && reviewInfo?.signature ? (
+                  {testRun.status === "APPROVED" &&
+                  supervisorSignature?.signatureImageUrl ? (
                     <Image
-                      src={reviewInfo.signature}
+                      src={supervisorSignature.signatureImageUrl}
                       alt="Firma Supervisor"
                       fill
                       className="object-contain mix-blend-multiply p-4"
@@ -469,10 +567,14 @@ export default function TestRunDetailPage() {
                   <p className="text-xs font-black text-slate-800 uppercase leading-none mb-2">
                     Aprobación Interventoría
                   </p>
-                  {reviewInfo?.reviewedAt && (
+                  {(supervisorSignature?.signedAt ||
+                    reviewInfo?.reviewedAt) && (
                     <div className={styles.timestamp}>
                       <Clock size={12} />{" "}
-                      {new Date(reviewInfo.reviewedAt).toLocaleString()}
+                      {new Date(
+                        supervisorSignature?.signedAt ||
+                          reviewInfo!.reviewedAt,
+                      ).toLocaleString()}
                     </div>
                   )}
                 </div>

@@ -5,9 +5,57 @@
   height: 100%;
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
+
+  /* Mobile/tablet: panel fijo que se desliza desde la izquierda */
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.sidebarOpen {
+  transform: translateX(0);
+  box-shadow: 0.5rem 0 1.5rem rgba(15, 23, 42, 0.15);
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    position: static;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .closeButton {
+    display: none;
+  }
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;

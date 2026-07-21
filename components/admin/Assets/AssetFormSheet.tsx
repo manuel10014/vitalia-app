@@ -38,6 +38,12 @@ interface AssetCategory {
   name: string;
 }
 
+const STATUS_OPTIONS: { value: "OPERATIONAL" | "MAINTENANCE" | "DECOMMISSIONED"; label: string }[] = [
+  { value: "OPERATIONAL", label: "Operativo" },
+  { value: "MAINTENANCE", label: "En Mantenimiento" },
+  { value: "DECOMMISSIONED", label: "Dado de Baja" },
+];
+
 function useAssetCategories() {
   return useQuery({
     queryKey: ["admin", "asset-categories"],
@@ -110,6 +116,7 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
           name: asset.name,
           categoryId: asset.categoryId,
           specsArray,
+          status: asset.status,
         });
       } else {
         form.reset({
@@ -138,7 +145,17 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
       };
 
       if (isEditing && asset) {
-        return await api.patch(`/assets/${asset.id}`, finalPayload);
+        const result = await api.patch(`/assets/${asset.id}`, finalPayload);
+        // El backend no acepta "status" en el PATCH general — tiene un
+        // endpoint dedicado (PATCH /assets/:id/status). Solo lo llamamos si
+        // el usuario realmente lo cambió, para no generar un request extra
+        // en cada edición.
+        if (values.status && values.status !== asset.status) {
+          await api.patch(`/assets/${asset.id}/status`, {
+            status: values.status,
+          });
+        }
+        return result;
       }
       return await api.post("/assets", finalPayload);
     },
@@ -216,6 +233,35 @@ export function AssetFormSheet({ open, onOpenChange, asset }: AssetFormProps) {
                   />
                 </div>
               </div>
+
+              {isEditing && (
+                <div className={styles.grid}>
+                  <div className={styles.fieldGroup}>
+                    <Label>Estado Operativo</Label>
+                    <Controller
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Especificaciones Técnicas */}

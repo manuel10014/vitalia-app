@@ -166,6 +166,7 @@ export interface WorkOrder {
   id: string;
   projectId: string;
   code: string;
+  address?: string;
   createdById: string;
   assignedTechId: string | null;
   status: OrderStatus;
@@ -344,13 +345,26 @@ export interface TestRun {
   metadata?: {
     numConductores?: number;
     fases?: string[];
+    // La firma del supervisor ya NO se guarda acá (ver Signature real más
+    // abajo, ligada a reportSnapshots[].signatures). Este campo solo trae
+    // el dictamen textual.
     review?: {
-      signature: string;
       reviewedAt: string;
+      reviewedById?: string;
       comments?: string;
     };
     [key: string]: unknown;
   } | null;
+
+  // Firma del técnico, capturada al momento de enviar los datos de campo
+  // (POST /test-runs/:id/submit). Presente recién luego de SUBMITTED.
+  technicianSignatureImageUrl?: string | null;
+  technicianSignatureHash?: string | null;
+  technicianSignedAt?: string | null;
+
+  // Snapshots de reporte generados por el backend al aprobar (incluye la
+  // firma real del supervisor en signatures[]).
+  reportSnapshots?: ReportSnapshot[];
 
   values: Record<string, unknown>;
   createdAt: string;
@@ -385,6 +399,7 @@ export interface ReportSnapshot {
   issuedAt: string | null;
   createdAt: string;
   testRun?: TestRun;
+  signatures?: Signature[];
 }
 
 export interface Signature {

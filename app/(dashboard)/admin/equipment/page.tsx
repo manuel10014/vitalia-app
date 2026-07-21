@@ -13,6 +13,9 @@ import { MeasurementEquipment } from "@/types";
 
 export default function EquipmentPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingEquipment, setEditingEquipment] =
+    useState<MeasurementEquipment | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const { data: allEquipment = [], isLoading } = useEquipment();
 
   const filteredEquipment = useMemo(() => {
@@ -123,8 +126,15 @@ export default function EquipmentPage() {
             },
             {
               header: "Acciones",
-              render: () => (
-                <Button variant="outline" size="sm">
+              render: (e) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEquipment(e);
+                    setIsEditOpen(true);
+                  }}
+                >
                   Editar
                 </Button>
               ),
@@ -132,6 +142,13 @@ export default function EquipmentPage() {
           ]}
         />
       </div>
+
+      <CreateEquipmentModal
+        equipmentToEdit={editingEquipment}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onClose={() => setEditingEquipment(null)}
+      />
     </div>
   );
 }

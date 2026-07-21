@@ -81,3 +81,35 @@
     max-width: 100%;
   }
 }
+
+.deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.deleteButton:hover {
+  background-color: #fee2e2;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmActionButton {
+  background-color: #dc2626 !important;
+  color: white !important;
+}
+
+.confirmActionButton:hover {
+  background-color: #b91c1c !important;
+}

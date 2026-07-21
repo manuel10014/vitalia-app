@@ -1,23 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
+import SignatureCanvas from "react-signature-canvas";
 import api from "@/lib/api";
 import {
   TestRun,
   OrganizationProtocolVersion,
   CapturedValue,
-  TestStatus,
   WorkOrder,
   Asset,
   CapturedDataRecord,
   TestRunEquipment,
+  ApiErrorResponse,
 } from "@/types";
 import { useDynamicForm } from "@/hooks/useDynamicForm";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -28,8 +38,13 @@ import {
   Wrench,
   Layers,
   AlertTriangle,
+  PenTool,
+  RotateCcw,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { RunTestForm } from "./RunTestForm";
+import { findMissingEvidence } from "@/lib/technicalMatrix";
 import styles from "./RunTest.module.css"; // Asegúrate de que este archivo exista
 
 export default function RunTestExecutionPage() {
@@ -100,6 +115,14 @@ export default function RunTestExecutionPage() {
     protocolVersion?.schemaDefinition,
   );
 
+  // --- Firma del técnico + envío ---
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [finalStatus, setFinalStatus] = useState<"PASSED" | "FAILED">(
+    "PASSED",
+  );
+  const [isCertified, setIsCertified] = useState(false);
+  const sigPad = useRef<SignatureCanvas>(null);
+
   useEffect(() => {
     const remoteData = testRun?.data?.capturedData || testRun?.values;
     if (
@@ -121,15 +144,49 @@ export default function RunTestExecutionPage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const missingEvidence = findMissingEvidence(
+        protocolVersion?.schemaDefinition,
+        formData,
+        fasesConfiguradas,
+        numCond,
+      );
+      if (missingEvidence.length > 0) {
+        const first = missingEvidence[0];
+        toast.error(
+          missingEvidence.length === 1
+            ? `Falta foto de conexión y/o medición en "${first.fieldLabel}" (Fase ${first.fase}, H${first.conductor}).`
+            : `Faltan fotos de conexión y/o medición en ${missingEvidence.length} mediciones (ej. "${first.fieldLabel}", Fase ${first.fase}). Cada medición registrada requiere ambas fotos.`,
+        );
+        throw new Error("Evidencia fotográfica incompleta");
+      }
+      if (!isCertified) {
+        toast.error("Debe certificar que los datos registrados son veraces.");
+        throw new Error("Sin certificar");
+      }
+      if (!sigPad.current || sigPad.current.isEmpty()) {
+        toast.error("La firma del técnico es obligatoria para enviar el ensayo.");
+        throw new Error("Firma vacía");
+      }
+      const signature = sigPad.current.toDataURL("image/png");
       const payload = {
         capturedData: formData as unknown as CapturedDataRecord,
-        status: "SUBMITTED" as TestStatus,
+        finalStatus,
+        isCertified,
+        signature,
       };
-      return await api.patch(`/test-runs/${testRunId}`, payload);
+      return await api.post(`/test-runs/${testRunId}/submit`, payload);
     },
     onSuccess: () => {
       toast.success("Ensayo enviado a revisión técnica.");
+      setIsSubmitDialogOpen(false);
       router.push("/admin/test-runs");
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      const msg = error.response?.data?.message;
+      toast.error(
+        (Array.isArray(msg) ? msg.join(" ") : msg) ||
+          "Error al enviar el ensayo.",
+      );
     },
   });
 
@@ -160,18 +217,106 @@ export default function RunTestExecutionPage() {
             </h1>
           </div>
         </div>
-        <Button
-          onClick={() => mutation.mutate()}
-          className={styles.saveButton}
-          disabled={mutation.isPending}
-        >
-          {mutation.isPending ? (
-            <Loader2 className="animate-spin" size={18} />
-          ) : (
-            <Save size={18} className="mr-2" />
-          )}
-          FINALIZAR Y ENVIAR
-        </Button>
+        <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+          <Button
+            onClick={() => setIsSubmitDialogOpen(true)}
+            className={styles.saveButton}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} className="mr-2" />
+            )}
+            FINALIZAR Y ENVIAR
+          </Button>
+          <DialogContent className={styles.submitDialogContent}>
+            <DialogHeader className={styles.submitDialogHeader}>
+              <DialogTitle className={styles.submitDialogTitle}>
+                Cierre de Toma de Datos
+              </DialogTitle>
+              <DialogDescription className={styles.submitDialogDescription}>
+                Certifique los datos y capture su firma para enviar a
+                revisión.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className={styles.submitDialogBody}>
+              <div className={styles.buttonGroup}>
+                <button
+                  onClick={() => setFinalStatus("PASSED")}
+                  className={
+                    finalStatus === "PASSED"
+                      ? styles.btnActive
+                      : styles.btnInactive
+                  }
+                >
+                  <CheckCircle2 size={14} className={styles.inlineIcon} />{" "}
+                  APROBADO
+                </button>
+                <button
+                  onClick={() => setFinalStatus("FAILED")}
+                  className={
+                    finalStatus === "FAILED"
+                      ? styles.btnActive
+                      : styles.btnInactive
+                  }
+                >
+                  <XCircle size={14} className={styles.inlineIcon} />{" "}
+                  RECHAZADO
+                </button>
+              </div>
+
+              <div className={styles.certifyRow}>
+                <span className={styles.certifyLabel}>
+                  Certifico que los datos registrados son veraces
+                </span>
+                <Switch
+                  checked={isCertified}
+                  onCheckedChange={setIsCertified}
+                />
+              </div>
+
+              <div>
+                <div className={styles.signatureLabelRow}>
+                  <PenTool size={14} />
+                  <span className={styles.signatureLabelText}>
+                    Firma del Técnico
+                  </span>
+                </div>
+                <div className={styles.signaturePadContainer}>
+                  <SignatureCanvas
+                    ref={sigPad}
+                    penColor="#0f172a"
+                    canvasProps={{ className: styles.signatureCanvas }}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => sigPad.current?.clear()}
+                  className={styles.clearSignatureButton}
+                >
+                  <RotateCcw size={12} className={styles.inlineIcon} />{" "}
+                  LIMPIAR
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending || !isCertified}
+              className={styles.confirmSubmitButton}
+            >
+              {mutation.isPending ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Save size={18} />
+              )}
+              CONFIRMAR Y ENVIAR
+            </Button>
+          </DialogContent>
+        </Dialog>
       </header>
 
       <ScrollArea className={styles.scrollArea}>
@@ -333,6 +478,7 @@ export default function RunTestExecutionPage() {
               formData={formData}
               numConductores={numCond}
               fases={fasesConfiguradas}
+              testRunId={testRunId}
             />
           </div>
         </div>

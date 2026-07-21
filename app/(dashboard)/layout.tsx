@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
@@ -14,6 +14,7 @@ export default function DashboardLayout({
 }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -31,13 +32,24 @@ export default function DashboardLayout({
 
   return (
     <div className={styles.layoutWrapper}>
-      {/* Sidebar encapsulado para escritorio */}
+      {/* En mobile/tablet es un drawer deslizable; en desktop, panel fijo */}
       <div className={styles.sidebarWrapper}>
-        <Sidebar />
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
       </div>
 
+      {/* Fondo oscuro para cerrar el drawer al tocar afuera (solo mobile) */}
+      {isSidebarOpen && (
+        <div
+          className={styles.backdrop}
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <div className={styles.mainContentWrapper}>
-        <Navbar />
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
         <main className={styles.scrollArea}>
           <div className={styles.innerContainer}>{children}</div>
         </main>

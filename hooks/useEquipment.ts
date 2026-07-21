@@ -44,7 +44,10 @@ export function useEquipment() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      // Debe coincidir con la queryKey real de la lista (["admin",
+      // "equipment"]) — con solo ["equipment"] no invalidaba nada y la
+      // tabla se quedaba con los datos viejos tras editar.
+      queryClient.invalidateQueries({ queryKey: ["admin", "equipment"] });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
       const message =

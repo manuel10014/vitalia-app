@@ -5,14 +5,31 @@
   overflow: hidden;
 }
 
+/* En mobile/tablet el sidebar se renderiza siempre en el DOM, pero como
+   panel fijo fuera de pantalla (ver sidebar.module.css .sidebarOpen), para
+   poder deslizarlo con el botón de menú del navbar. En desktop vuelve a ser
+   un panel estático normal dentro del flujo del layout. */
 .sidebarWrapper {
-  display: none;
   flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
   .sidebarWrapper {
-    display: flex;
+    position: static;
+  }
+}
+
+/* Fondo oscuro detrás del sidebar cuando está abierto en mobile/tablet */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  z-index: 40;
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
   }
 }
 

@@ -56,6 +56,31 @@ export default function TestRunsPage() {
         color: "bg-teal-100 text-teal-700",
         icon: ClipboardCheck,
       },
+      PENDING: {
+        label: "Pendiente",
+        color: "bg-gray-100 text-gray-700",
+        icon: Clock,
+      },
+      DRAFT: {
+        label: "Borrador",
+        color: "bg-gray-100 text-gray-700",
+        icon: Clock,
+      },
+      UNDER_REVIEW: {
+        label: "En Revisión",
+        color: "bg-amber-100 text-amber-700",
+        icon: FileSearch,
+      },
+      REJECTED: {
+        label: "Rechazado",
+        color: "bg-red-100 text-red-700",
+        icon: XCircle,
+      },
+      ISSUED: {
+        label: "Emitido",
+        color: "bg-teal-100 text-teal-700",
+        icon: ClipboardCheck,
+      },
     };
 
     return (
@@ -92,6 +117,15 @@ export default function TestRunsPage() {
                     TAG: {tr.asset?.tagId || "N/A"}
                   </span>
                 </div>
+              ),
+            },
+            {
+              header: "Cliente",
+              render: (tr) => (
+                <span className="text-sm font-bold text-slate-700">
+                  {tr.workOrder?.project?.client?.businessName ||
+                    "Sin cliente"}
+                </span>
               ),
             },
             {

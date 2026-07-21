@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { DataTable } from "@/components/admin/dataTable/DataTable";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,29 @@ import {
   Search,
   FileSearch,
   Box,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PaginatedResponse } from "@/types";
+import { PaginatedResponse, TestRun, ApiErrorResponse } from "@/types";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { generateVLFReportFromTemplate } from "@/lib/vlfTemplateReportGenerator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import styles from "./reports.module.css";
 
-// Tipado alineado con tu esquema de Prisma (ReportSnapshot)
 interface ReportSnapshot {
   id: string;
   reportName: string;
@@ -42,16 +59,65 @@ interface ReportSnapshot {
 }
 
 export default function ReportsPage() {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
   const { data: response, isLoading } = useQuery<
     PaginatedResponse<ReportSnapshot>
   >({
-    queryKey: ["report-snapshots"],
+    queryKey: ["report"],
     queryFn: async () => {
-      const res = await api.get("/report-snapshots");
-      // Manejando tanto arrays directos como objetos paginados
+      const res = await api.get("/reports");
       return Array.isArray(res.data) ? { data: res.data } : res.data;
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      return await api.delete(`/reports/${reportId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+      // El detalle del ensayo (test-run) también depende de si el reporte
+      // existe o no para mostrar "Reporte Generado" vs "Generar Reporte".
+      queryClient.invalidateQueries({ queryKey: ["test-run"] });
+      toast.success("Reporte eliminado.");
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      const msg = error.response?.data?.message;
+      toast.error(
+        (Array.isArray(msg) ? msg.join(" ") : msg) ||
+          "Error al eliminar el reporte.",
+      );
+    },
+  });
+
+  // 🟢 MANEJADOR DE DESCARGA DINÁMICA DIRECTO EN EL CLIENTE (EXCEL)
+  const handleDownloadExcel = async (testRunId: string) => {
+    try {
+      setDownloadingId(testRunId);
+
+      // 1. Consultar de forma asíncrona la data completa del TestRun (incluyendo capturedData)
+      // Nota: el backend devuelve el TestRun directamente (sin wrapper). El propio TestRun
+      // trae una relación llamada "data" (TestRunData con capturedData), así que NO hay que
+      // desenvolver res.data.data - eso pisaría el TestRun completo con esa sub-relación.
+      const res = await api.get(`/test-runs/${testRunId}`);
+      const fullTestRunData: TestRun = res.data;
+
+      if (!fullTestRunData) {
+        throw new Error(
+          "No se recuperaron los datos de ingeniería de la prueba.",
+        );
+      }
+      await generateVLFReportFromTemplate(fullTestRunData);
+      toast.success("Certificado Excel (FO-INDE-013) generado localmente.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al compilar las métricas del snapshot.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <div className="p-8 space-y-8 bg-slate-50/30 min-h-screen">
@@ -185,17 +251,61 @@ export default function ReportsPage() {
                     </Link>
                   </Button>
 
+                  {/* 🟢 ACCIÓN ACTUALIZADA PARA GENERACIÓN EN TIEMPO REAL (EXCEL) */}
                   <Button
                     variant="default"
                     size="sm"
-                    disabled={!report.pdfUrl}
+                    disabled={downloadingId === report.testRunId}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] h-9 rounded-xl shadow-md gap-2"
-                    onClick={() =>
-                      report.pdfUrl && window.open(report.pdfUrl, "_blank")
-                    }
+                    onClick={() => handleDownloadExcel(report.testRunId)}
                   >
-                    <Download size={14} /> PDF
+                    {downloadingId === report.testRunId ? (
+                      <Loader2 className="animate-spin" size={14} />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    EXCEL
                   </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        disabled={deleteMutation.isPending}
+                        aria-label="Eliminar reporte"
+                      >
+                        {deleteMutation.isPending &&
+                        deleteMutation.variables === report.id ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          ¿Eliminar este reporte?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Se eliminará permanentemente el certificado{" "}
+                          <strong>{report.reportName}</strong> (v
+                          {report.versionNumber}) y la firma asociada. Esta
+                          acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className={styles.confirmActionButton}
+                          onClick={() => deleteMutation.mutate(report.id)}
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               ),
             },

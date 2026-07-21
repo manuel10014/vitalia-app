@@ -9,6 +9,11 @@ export const assetSchema = z.object({
       value: z.string().min(1, "Valor requerido"),
     }),
   ),
+  // Solo se usa al editar — un activo nuevo siempre nace OPERATIONAL en el
+  // backend (default de Prisma), así que el campo va oculto en creación.
+  status: z
+    .enum(["OPERATIONAL", "MAINTENANCE", "DECOMMISSIONED"])
+    .optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

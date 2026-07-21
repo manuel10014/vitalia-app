@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   Zap,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import styles from "./protocolBuilder.module.css";
 import { toast } from "sonner";
@@ -46,10 +47,15 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
   const { useProtocolVersion, updateSchema } = useProtocols();
   const { data: version, isLoading } = useProtocolVersion(versionId);
   const [sections, setSections] = useState<Section[]>([]);
+  const [isTemplateLoaded, setIsTemplateLoaded] = useState(false);
 
   useEffect(() => {
-    if (version?.schemaDefinition?.sections) {
+    if (
+      version?.schemaDefinition?.sections &&
+      (version.schemaDefinition.sections as Section[]).length > 0
+    ) {
       setSections(version.schemaDefinition.sections as Section[]);
+      setIsTemplateLoaded(true); // Si ya venía con datos del backend, está aprobada
     }
   }, [version]);
 
@@ -152,10 +158,17 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
       },
     ];
     setSections(vlfTemplate);
+    setIsTemplateLoaded(true); // 🟢 Desbloquea el entorno
     toast.success("Plantilla VLF cargada");
   };
 
   const addSection = () => {
+    if (!isTemplateLoaded) {
+      toast.error(
+        "Debe cargar la plantilla VLF base antes de añadir secciones personalizadas.",
+      );
+      return;
+    }
     const newSection: Section = {
       id: crypto.randomUUID(),
       title: "Nueva Sección",
@@ -186,8 +199,15 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
     );
   };
 
-  // 🟢 SOLUCIÓN TS: Empaquetado de datos para el Back-end
   const handleSave = () => {
+    // 🔴 GUARDA DE SEGURIDAD INTERNA: Evita llamadas maliciosas por consola
+    if (!isTemplateLoaded || sections.length === 0) {
+      toast.error(
+        "Operación rechazada: Es obligatorio estructurar el servicio con la plantilla VLF.",
+      );
+      return;
+    }
+
     if (!version?.organizationProtocolId) {
       toast.error("Error: No se pudo identificar el protocolo");
       return;
@@ -237,8 +257,16 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
 
           <Button
             onClick={handleSave}
-            disabled={updateSchema.isPending}
-            className="bg-slate-900 text-white font-black hover:bg-slate-800"
+            disabled={
+              updateSchema.isPending ||
+              !isTemplateLoaded ||
+              sections.length === 0
+            }
+            className={`font-black ${
+              !isTemplateLoaded || sections.length === 0
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-slate-900 text-white hover:bg-slate-800"
+            }`}
           >
             {updateSchema.isPending ? (
               <Loader2 className="animate-spin mr-2" size={16} />
@@ -252,6 +280,24 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
 
       <div className={styles.editorOnlyArea}>
         <div className={styles.contentWrapper}>
+          {/* 🔴 ALERTA INFORMATIVA SI EL PROCESO ESTÁ BLOQUEADO */}
+          {!isTemplateLoaded && (
+            <div className="flex items-center gap-3 p-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl mb-6">
+              <AlertCircle className="text-amber-600 shrink-0" size={20} />
+              <div className="text-left">
+                <p className="font-bold text-sm">
+                  Estructura del Servicio Requerida
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Para garantizar la consistencia analítica en las pruebas de
+                  cables de alta tensión, debe presionar el botón{" "}
+                  <strong>&quot;Cargar Plantilla VLF&quot;</strong> antes de
+                  poder diseñar o publicar este protocolo.
+                </p>
+              </div>
+            </div>
+          )}
+
           {sections.map((section, sIdx) => (
             <div key={section.id} className={styles.sectionCard}>
               <div className={styles.sectionHeader}>
@@ -267,9 +313,13 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() =>
-                    setSections(sections.filter((s) => s.id !== section.id))
-                  }
+                  onClick={() => {
+                    const filtered = sections.filter(
+                      (s) => s.id !== section.id,
+                    );
+                    setSections(filtered);
+                    if (filtered.length === 0) setIsTemplateLoaded(false);
+                  }}
                 >
                   <Trash2 size={16} className="text-red-400" />
                 </Button>
@@ -366,7 +416,12 @@ export default function ProtocolBuilder({ versionId }: { versionId: string }) {
 
           <Button
             onClick={addSection}
-            className="w-full py-12 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition-all font-black uppercase tracking-widest text-xs"
+            disabled={!isTemplateLoaded}
+            className={`w-full py-12 border-2 border-dashed rounded-[2rem] transition-all font-black uppercase tracking-widest text-xs ${
+              !isTemplateLoaded
+                ? "border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50/50"
+                : "border-slate-200 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30"
+            }`}
             variant="outline"
           >
             <Plus size={20} className="mr-3" /> Crear Nueva Sección de
