@@ -63,9 +63,20 @@ function isTechnicalMatrix(title: string) {
   );
 }
 
-export async function generateVLFReportFromTemplate(
+export interface GeneratedReportFile {
+  blob: Blob;
+  filename: string;
+}
+
+/**
+ * Arma el certificado Excel a partir de la plantilla y devuelve el blob
+ * en vez de descargarlo directo — así el caller puede tanto disparar la
+ * descarga local como subirlo al bucket (ver reports/page.tsx), sin tener
+ * que regenerar el archivo dos veces.
+ */
+export async function buildVLFReportBlob(
   testRun: TestRun,
-): Promise<void> {
+): Promise<GeneratedReportFile> {
   const res = await fetch(TEMPLATE_URL);
   if (!res.ok) {
     throw new Error("No se pudo cargar la plantilla de informe VLF.");
@@ -306,10 +317,21 @@ export async function generateVLFReportFromTemplate(
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+  const filename = `FO-INDE-013-INFORME-VLF-${testRun.workOrder?.code || testRun.id.slice(0, 8)}.xlsx`;
+
+  return { blob, filename };
+}
+
+/** Genera el certificado y lo descarga directo en el navegador (comportamiento
+ * original, sin subida al bucket) — se mantiene por compatibilidad. */
+export async function generateVLFReportFromTemplate(
+  testRun: TestRun,
+): Promise<void> {
+  const { blob, filename } = await buildVLFReportBlob(testRun);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `FO-INDE-013-INFORME-VLF-${testRun.workOrder?.code || testRun.id.slice(0, 8)}.xlsx`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();

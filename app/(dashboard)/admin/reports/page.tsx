@@ -14,6 +14,7 @@ import {
   Box,
   Loader2,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PaginatedResponse, TestRun, ApiErrorResponse } from "@/types";
@@ -21,7 +22,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { generateVLFReportFromTemplate } from "@/lib/vlfTemplateReportGenerator";
+import { buildVLFReportBlob } from "@/lib/vlfTemplateReportGenerator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -92,16 +93,16 @@ export default function ReportsPage() {
     },
   });
 
-  // 🟢 MANEJADOR DE DESCARGA DINÁMICA DIRECTO EN EL CLIENTE (EXCEL)
-  const handleDownloadExcel = async (testRunId: string) => {
+  // 🟢 GENERA EL EXCEL EN EL CLIENTE, LO DESCARGA Y LO SUBE AL BUCKET
+  const handleDownloadExcel = async (report: ReportSnapshot) => {
     try {
-      setDownloadingId(testRunId);
+      setDownloadingId(report.testRunId);
 
       // 1. Consultar de forma asíncrona la data completa del TestRun (incluyendo capturedData)
       // Nota: el backend devuelve el TestRun directamente (sin wrapper). El propio TestRun
       // trae una relación llamada "data" (TestRunData con capturedData), así que NO hay que
       // desenvolver res.data.data - eso pisaría el TestRun completo con esa sub-relación.
-      const res = await api.get(`/test-runs/${testRunId}`);
+      const res = await api.get(`/test-runs/${report.testRunId}`);
       const fullTestRunData: TestRun = res.data;
 
       if (!fullTestRunData) {
@@ -109,8 +110,32 @@ export default function ReportsPage() {
           "No se recuperaron los datos de ingeniería de la prueba.",
         );
       }
-      await generateVLFReportFromTemplate(fullTestRunData);
-      toast.success("Certificado Excel (FO-INDE-013) generado localmente.");
+
+      const { blob, filename } = await buildVLFReportBlob(fullTestRunData);
+
+      // Descarga inmediata para quien lo generó (mismo comportamiento de
+      // siempre) — la subida al bucket abajo es adicional, no reemplaza esto.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      // Subida al bucket de archivos: antes el certificado solo vivía en la
+      // descarga local del navegador y se perdía; ahora queda persistido y
+      // enlazado al ReportSnapshot (pdfUrl), para que cualquiera pueda
+      // volver a abrirlo sin regenerarlo.
+      const formData = new FormData();
+      formData.append("file", blob, filename);
+      await api.post(`/reports/${report.id}/upload`, formData);
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+
+      toast.success(
+        "Certificado Excel (FO-INDE-013) generado y guardado en el bucket.",
+      );
     } catch (error) {
       console.error(error);
       toast.error("Error al compilar las métricas del snapshot.");
@@ -251,13 +276,13 @@ export default function ReportsPage() {
                     </Link>
                   </Button>
 
-                  {/* 🟢 ACCIÓN ACTUALIZADA PARA GENERACIÓN EN TIEMPO REAL (EXCEL) */}
+                  {/* Regenera el Excel, lo descarga y lo sube al bucket (pdfUrl) */}
                   <Button
                     variant="default"
                     size="sm"
                     disabled={downloadingId === report.testRunId}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] h-9 rounded-xl shadow-md gap-2"
-                    onClick={() => handleDownloadExcel(report.testRunId)}
+                    onClick={() => handleDownloadExcel(report)}
                   >
                     {downloadingId === report.testRunId ? (
                       <Loader2 className="animate-spin" size={14} />
@@ -266,6 +291,24 @@ export default function ReportsPage() {
                     )}
                     EXCEL
                   </Button>
+
+                  {/* Ya guardado en el bucket: se puede abrir directo sin regenerar */}
+                  {report.pdfUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 h-9 font-bold text-[11px]"
+                    >
+                      <a
+                        href={report.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink size={14} className="mr-2" /> VER GUARDADO
+                      </a>
+                    </Button>
+                  )}
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
